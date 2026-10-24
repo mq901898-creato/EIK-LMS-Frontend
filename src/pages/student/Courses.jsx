@@ -19,15 +19,13 @@ import {
   Stack,
 } from "@mui/material";
 
-import {
-  School,
-  Search,
-  MenuBook,
-  Person,
-  ArrowForward,
-  WorkspacePremium,
-  LockOutlined,
-} from "@mui/icons-material";
+import School from "@mui/icons-material/School";
+import Search from "@mui/icons-material/Search";
+import MenuBook from "@mui/icons-material/MenuBook";
+import Person from "@mui/icons-material/Person";
+import ArrowForward from "@mui/icons-material/ArrowForward";
+import WorkspacePremium from "@mui/icons-material/WorkspacePremium";
+import LockOutlined from "@mui/icons-material/LockOutlined";
 
 import { useNavigate } from "react-router-dom";
 import api from "../../servises/api";

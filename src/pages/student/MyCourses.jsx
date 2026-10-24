@@ -13,12 +13,10 @@ import {
   Typography,
 } from "@mui/material";
 
-import {
-  School,
-  MenuBook,
-  Person,
-  ArrowForward,
-} from "@mui/icons-material";
+import School from "@mui/icons-material/School";
+import MenuBook from "@mui/icons-material/MenuBook";
+import Person from "@mui/icons-material/Person";
+import ArrowForward from "@mui/icons-material/ArrowForward";
 
 import { useNavigate } from "react-router-dom";
 import api from "../../servises/api";

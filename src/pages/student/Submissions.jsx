@@ -16,15 +16,13 @@ import {
   Typography,
 } from "@mui/material";
 
-import {
-  AssignmentOutlined,
-  CheckCircleOutlined,
-  OpenInNew,
-  PendingActionsOutlined,
-  Refresh,
-  Search,
-  UploadFileOutlined,
-} from "@mui/icons-material";
+import AssignmentOutlined from "@mui/icons-material/AssignmentOutlined";
+import CheckCircleOutlined from "@mui/icons-material/CheckCircleOutlined";
+import OpenInNew from "@mui/icons-material/OpenInNew";
+import PendingActionsOutlined from "@mui/icons-material/PendingActionsOutlined";
+import Refresh from "@mui/icons-material/Refresh";
+import Search from "@mui/icons-material/Search";
+import UploadFileOutlined from "@mui/icons-material/UploadFileOutlined";
 
 import StudentLayout from "../components/student/StudentLayout";
 import api from "../../servises/api";
