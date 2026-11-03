@@ -4,9 +4,12 @@ import { IconButton, Avatar } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import { TextField, InputAdornment } from "@mui/material";
 import { useLocation } from "react-router-dom";
+import ThemeToggle from "../common/ThemeToggle";
+import { useAppTheme } from "../../context/useAppTheme";
 
 function Navbar() {
   const location = useLocation();
+  const { mode } = useAppTheme();
 
   const getPageTitle = () => {
     switch (location.pathname) {
@@ -32,7 +35,11 @@ function Navbar() {
         return "Student Dashboard";
       case "/teacher/enrollments":
         return "Enrollments Requests";
-
+      case "/teacher/quizzes/create":
+        return "AI Quiz Studio";
+      case "/student/quizzes":
+        return "Available Quizzes";
+        
       default:
         return "Dashboard";
     }
@@ -60,7 +67,8 @@ function Navbar() {
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        bgcolor: "white",
+        bgcolor: mode === "dark" ? "#182338" : "white",
+        color: mode === "dark" ? "#e7edf7" : "inherit",
         p: 2,
         borderRadius: 2,
         boxShadow: 1,
@@ -79,10 +87,13 @@ function Navbar() {
 
       {/* Right Side */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+        <ThemeToggle />
+
         <IconButton
           sx={{
+            color: mode === "dark" ? "#e7edf7" : "inherit",
             "&:hover": {
-              bgcolor: "#e3f2fd",
+              bgcolor: mode === "dark" ? "#263650" : "#e3f2fd",
             },
           }}
         >

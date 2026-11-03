@@ -71,7 +71,12 @@ const teacherMenuItems = [
     title: "Enrollments",
     path: "/teacher/enrollments",
     icon: HowToRegIcon,
-  }
+  },
+  {
+    title: "Quizzes",
+    path: "/teacher/quizzes/create",
+    icon: AssignmentIcon,
+  },
 ];
 
 const studentMenuItems = [
@@ -95,6 +100,11 @@ const studentMenuItems = [
     path: "/student/submissions",
     icon: AssignmentTurnedInIcon,
   },
+  {
+    title: "Quizzes",
+    path: "/student/quizzes",
+    icon: AssignmentIcon,
+  }
 ];
 
 const getMenuItems = (role) => {

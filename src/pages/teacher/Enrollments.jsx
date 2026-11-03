@@ -10,6 +10,7 @@ import {
   CircularProgress,
   Container,
   Typography,
+  useTheme,
 } from "@mui/material";
 
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
@@ -21,6 +22,8 @@ import PersonIcon from "@mui/icons-material/Person";
 import api from "../../servises/api";
 import Layout from "../../components/layout/Layout";
 export default function Enrollments() {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const [enrollments, setEnrollments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
@@ -113,7 +116,7 @@ export default function Enrollments() {
     <Box
       sx={{
         minHeight: "100vh",
-        bgcolor: "#f5f7fb",
+        bgcolor: isDark ? "background.default" : "#f5f7fb",
         py: 4,
       }}
     >

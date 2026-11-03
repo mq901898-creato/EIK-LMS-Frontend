@@ -20,6 +20,7 @@ import {
   Tabs,
   TextField,
   Typography,
+  useTheme,
 } from "@mui/material";
 
 import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
@@ -30,12 +31,10 @@ import LinkOutlinedIcon from "@mui/icons-material/LinkOutlined";
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import OpenInNewOutlinedIcon from "@mui/icons-material/OpenInNewOutlined";
-import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 
 const BLUE = "#1565c0";
 const NAVY = "#102a56";
-const PAGE_BG = "#f4f7fc";
 
 const getSubmission = (item) =>
   item.submissionDetails || item.submission || {};
@@ -80,6 +79,8 @@ const formatDate = (date) => {
 };
 
 const StudentAssignmentsPage = () => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submissionURLs, setSubmissionURLs] = useState({});
@@ -264,9 +265,8 @@ const StudentAssignmentsPage = () => {
       <CardContent sx={{ p: 2.5 }}>
         <Stack
           direction="row"
-          alignItems="center"
-          justifyContent="space-between"
           spacing={1}
+          sx={{ alignItems: "center", justifyContent: "space-between" }}
         >
           <Avatar
             variant="rounded"
@@ -284,7 +284,7 @@ const StudentAssignmentsPage = () => {
           <Typography
             variant="h4"
             sx={{
-              color: NAVY,
+              color: isDark ? "text.primary" : NAVY,
               fontWeight: 800,
               letterSpacing: "-1px",
             }}
@@ -294,7 +294,7 @@ const StudentAssignmentsPage = () => {
         </Stack>
 
         <Typography
-          sx={{ mt: 2, color: NAVY, fontWeight: 700 }}
+          sx={{ mt: 2, color: isDark ? "text.primary" : NAVY, fontWeight: 700 }}
         >
           {title}
         </Typography>
@@ -311,22 +311,23 @@ const StudentAssignmentsPage = () => {
 
   if (loading) {
     return (
-      <Box
-        sx={{
-          minHeight: "60vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          bgcolor: PAGE_BG,
-        }}
-      >
-        <Stack alignItems="center" spacing={2}>
-          <CircularProgress sx={{ color: BLUE }} />
-          <Typography color="text.secondary">
-            Loading your assignments...
-          </Typography>
-        </Stack>
-      </Box>
+      <StudentLayout>
+        <Box
+          sx={{
+            minHeight: "50vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Stack sx={{ alignItems: "center" }} spacing={2}>
+            <CircularProgress sx={{ color: BLUE }} />
+            <Typography color="text.secondary">
+              Loading your assignments...
+            </Typography>
+          </Stack>
+        </Box>
+      </StudentLayout>
     );
   }
 
@@ -335,23 +336,23 @@ const StudentAssignmentsPage = () => {
     <Box
       sx={{
         minHeight: "100%",
-        bgcolor: PAGE_BG,
-        py: { xs: 2.5, md: 4 },
-        px: { xs: 1.5, sm: 2, md: 3 },
+        bgcolor: "transparent",
       }}
     >
       <Container maxWidth="xl" disableGutters>
         {/* Page heading */}
         <Stack
           direction={{ xs: "column", sm: "row" }}
-          alignItems={{ xs: "flex-start", sm: "center" }}
-          justifyContent="space-between"
           spacing={2}
-          sx={{ mb: 3 }}
+          sx={{
+            alignItems: { xs: "flex-start", sm: "center" },
+            justifyContent: "space-between",
+            mb: 3,
+          }}
         >
           <Box>
             <Typography
-              sx={{ mt: 1, color: "#748198", fontSize: 14 }}
+              sx={{ mt: 1, color: isDark ? "text.secondary" : "#748198", fontSize: 14 }}
             >
               Manage your tasks, submit your work, and track your
               results.
@@ -371,104 +372,6 @@ const StudentAssignmentsPage = () => {
             }}
           />
         </Stack>
-
-        {/* Welcome banner */}
-        <Paper
-          elevation={0}
-          sx={{
-            position: "relative",
-            overflow: "hidden",
-            p: { xs: 2.5, md: 4 },
-            mb: 3,
-            borderRadius: 4,
-            color: "white",
-            background:
-              "linear-gradient(115deg, #102a56 0%, #174b91 60%, #2878d0 100%)",
-          }}
-        >
-          <Box
-            sx={{
-              position: "absolute",
-              width: 190,
-              height: 190,
-              borderRadius: "50%",
-              bgcolor: "rgba(255,255,255,0.06)",
-              right: { xs: -80, md: 50 },
-              top: -95,
-            }}
-          />
-
-          <Box
-            sx={{
-              position: "absolute",
-              width: 125,
-              height: 125,
-              borderRadius: "50%",
-              border: "1px solid rgba(255,255,255,0.12)",
-              right: { xs: -30, md: 110 },
-              bottom: -80,
-            }}
-          />
-
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            alignItems={{ xs: "flex-start", sm: "center" }}
-            justifyContent="space-between"
-            spacing={2}
-            sx={{ position: "relative", zIndex: 1 }}
-          >
-            <Box sx={{ maxWidth: 560 }}>
-              <Typography
-                sx={{
-                  color: "#c7ddff",
-                  fontSize: 12,
-                  fontWeight: 800,
-                  letterSpacing: 1.5,
-                  mb: 1,
-                }}
-              >
-                STUDENT WORKSPACE
-              </Typography>
-
-              <Typography
-                variant="h5"
-                sx={{
-                  fontWeight: 800,
-                  fontSize: { xs: 22, md: 27 },
-                  mb: 1,
-                }}
-              >
-                Stay on top of your learning!
-              </Typography>
-
-              <Typography
-                sx={{
-                  color: "#e1ecff",
-                  fontSize: 14,
-                  lineHeight: 1.8,
-                }}
-              >
-                Check your deadlines, complete pending tasks, and
-                keep track of your submitted assignments in one
-                place.
-              </Typography>
-            </Box>
-
-            <Avatar
-              variant="rounded"
-              sx={{
-                width: 70,
-                height: 70,
-                bgcolor: "rgba(255,255,255,0.13)",
-                color: "#fff",
-                border: "1px solid rgba(255,255,255,0.2)",
-                borderRadius: 4,
-              }}
-            >
-              <AssignmentOutlinedIcon sx={{ fontSize: 38 }} />
-            </Avatar>
-          </Stack>
-        </Paper>
 
         {/* Statistics */}
         <Box
@@ -549,9 +452,11 @@ const StudentAssignmentsPage = () => {
         >
           <Stack
             direction={{ xs: "column", md: "row" }}
-            alignItems={{ xs: "stretch", md: "center" }}
-            justifyContent="space-between"
             spacing={2}
+            sx={{
+              alignItems: { xs: "stretch", md: "center" },
+              justifyContent: "space-between",
+            }}
           >
             <Tabs
               value={filter}
@@ -597,7 +502,7 @@ const StudentAssignmentsPage = () => {
                 width: { xs: "100%", md: 280 },
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 2.5,
-                  bgcolor: "#f9fbff",
+                  bgcolor: isDark ? "background.paper" : "#f9fbff",
                 },
               }}
               slotProps={{
@@ -641,7 +546,7 @@ const StudentAssignmentsPage = () => {
 
             <Typography
               variant="h6"
-              sx={{ fontWeight: 800, color: NAVY }}
+              sx={{ fontWeight: 800, color: isDark ? "text.primary" : NAVY }}
             >
               No assignments found
             </Typography>
@@ -720,15 +625,16 @@ const StudentAssignmentsPage = () => {
                   >
                     <Stack
                       direction={{ xs: "column", sm: "row" }}
-                      justifyContent="space-between"
-                      alignItems={{ xs: "flex-start", sm: "center" }}
                       spacing={2}
+                      sx={{
+                        justifyContent: "space-between",
+                        alignItems: { xs: "flex-start", sm: "center" },
+                      }}
                     >
                       <Stack
                         direction="row"
-                        alignItems="flex-start"
                         spacing={1.5}
-                        sx={{ minWidth: 0 }}
+                        sx={{ minWidth: 0, alignItems: "flex-start" }}
                       >
                         <Avatar
                           variant="rounded"
@@ -767,7 +673,7 @@ const StudentAssignmentsPage = () => {
                           <Typography
                             variant="h6"
                             sx={{
-                              color: NAVY,
+                              color: isDark ? "text.primary" : NAVY,
                               fontSize: { xs: 17, sm: 20 },
                               fontWeight: 800,
                               overflowWrap: "anywhere",
@@ -816,7 +722,7 @@ const StudentAssignmentsPage = () => {
                     <Typography
                       variant="body2"
                       sx={{
-                        color: "#66748b",
+                        color: isDark ? "text.secondary" : "#66748b",
                         lineHeight: 1.9,
                         whiteSpace: "pre-line",
                         overflowWrap: "anywhere",
@@ -840,7 +746,7 @@ const StudentAssignmentsPage = () => {
                           px: 1.8,
                           py: 1.3,
                           borderRadius: 2.5,
-                          bgcolor: "#f7f9fd",
+                          bgcolor: isDark ? "background.default" : "#f7f9fd",
                           flex: 1,
                         }}
                       >
@@ -853,7 +759,7 @@ const StudentAssignmentsPage = () => {
                         <Box>
                           <Typography
                             variant="caption"
-                            sx={{ color: "#8793a7", display: "block" }}
+                            sx={{ color: isDark ? "text.secondary" : "#8793a7", display: "block" }}
                           >
                             Due date
                           </Typography>
@@ -861,7 +767,7 @@ const StudentAssignmentsPage = () => {
                           <Typography
                             variant="body2"
                             sx={{
-                              color: isPastDue ? "#d9485f" : NAVY,
+                              color: isPastDue ? "#d9485f" : isDark ? "text.primary" : NAVY,
                               fontWeight: 700,
                             }}
                           >
@@ -933,15 +839,17 @@ const StudentAssignmentsPage = () => {
                       {isSubmitted ? (
                         <Stack
                           direction={{ xs: "column", sm: "row" }}
-                          justifyContent="space-between"
-                          alignItems={{ xs: "flex-start", sm: "center" }}
                           spacing={2}
+                          sx={{
+                            justifyContent: "space-between",
+                            alignItems: { xs: "flex-start", sm: "center" },
+                          }}
                         >
                           <Box>
                             <Stack
                               direction="row"
-                              alignItems="center"
                               spacing={1}
+                              sx={{ alignItems: "center" }}
                             >
                               <CheckCircleIcon
                                 sx={{ color: "#23956b" }}
@@ -999,7 +907,7 @@ const StudentAssignmentsPage = () => {
                         <Box>
                           <Typography
                             sx={{
-                              color: NAVY,
+                              color: isDark ? "text.primary" : NAVY,
                               fontWeight: 800,
                               fontSize: 14,
                               mb: 0.5,
@@ -1053,7 +961,7 @@ const StudentAssignmentsPage = () => {
                               }}
                               sx={{
                                 "& .MuiOutlinedInput-root": {
-                                  bgcolor: "#fff",
+                                  bgcolor: isDark ? "background.paper" : "#fff",
                                   borderRadius: 2.5,
                                 },
                               }}

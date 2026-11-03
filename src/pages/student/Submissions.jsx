@@ -14,6 +14,7 @@ import {
   Stack,
   TextField,
   Typography,
+  useTheme,
 } from "@mui/material";
 
 import AssignmentOutlined from "@mui/icons-material/AssignmentOutlined";
@@ -39,6 +40,8 @@ const formatDate = (date) => {
 };
 
 export default function Submissions() {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -108,28 +111,30 @@ export default function Submissions() {
 
   return (
     <StudentLayout>
-      <Box sx={{ minHeight: "100vh", bgcolor: "#f8fafc", py: { xs: 2, sm: 3, md: 4 } }}>
-        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3 } }}>
+      <Box sx={{ minHeight: "100%", bgcolor: "transparent" }}>
+        <Container maxWidth="xl" disableGutters>
           
           {/* Page Heading & Refresh Action */}
           <Stack
             direction={{ xs: "column", sm: "row" }}
-            justifyContent="space-between"
-            alignItems={{ xs: "stretch", sm: "center" }}
             spacing={2}
-            sx={{ mb: { xs: 3, md: 4 } }}
+            sx={{
+              justifyContent: "space-between",
+              alignItems: { xs: "stretch", sm: "center" },
+              mb: { xs: 3, md: 4 },
+            }}
           >
             <Box>
               <Typography
                 variant="h4"
                 sx={{
                   fontWeight: 800,
-                  color: "#0f172a",
+                  color: isDark ? "text.primary" : "#0f172a",
                   letterSpacing: "-0.5px",
                   fontSize: { xs: "1.5rem", sm: "1.8rem", md: "2.2rem" },
                 }}
               >
-                My Submissions
+                Track your work
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                 Track your assignment progress, grades, and teacher reviews.
@@ -145,11 +150,11 @@ export default function Submissions() {
                 borderRadius: 2.5,
                 fontWeight: 600,
                 borderColor: "#cbd5e1",
-                color: "#334155",
-                bgcolor: "#ffffff",
+                color: isDark ? "text.primary" : "#334155",
+                bgcolor: isDark ? "background.paper" : "#ffffff",
                 py: { xs: 1, sm: 0.75 },
                 "&:hover": {
-                  bgcolor: "#f1f5f9",
+                  bgcolor: isDark ? "#263650" : "#f1f5f9",
                   borderColor: "#94a3b8",
                 },
               }}
@@ -228,13 +233,15 @@ export default function Submissions() {
                   placeholder="Search by assignment title..."
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Search sx={{ color: "text.secondary" }} />
-                      </InputAdornment>
-                    ),
-                    sx: { borderRadius: 2 },
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Search sx={{ color: "text.secondary" }} />
+                        </InputAdornment>
+                      ),
+                      sx: { borderRadius: 2 },
+                    },
                   }}
                 />
 
@@ -271,12 +278,12 @@ export default function Submissions() {
                 py: { xs: 6, sm: 8 },
                 px: 2,
                 border: "1px solid #e2e8f0",
-                bgcolor: "#ffffff",
+                bgcolor: isDark ? "background.paper" : "#ffffff",
               }}
             >
               <UploadFileOutlined sx={{ fontSize: 56, color: "#94a3b8", mb: 1.5 }} />
 
-              <Typography variant="h6" fontWeight={700} color="#0f172a">
+              <Typography variant="h6" fontWeight={700} color={isDark ? "text.primary" : "#0f172a"}>
                 {submissions.length === 0
                   ? "No submissions yet"
                   : "No matching submissions"}
@@ -320,7 +327,7 @@ export default function Submissions() {
                       borderColor: "#e2e8f0",
                       boxShadow: "0 4px 12px rgba(15, 23, 42, 0.02)",
                       transition: "all 0.2s ease-in-out",
-                      bgcolor: "#ffffff",
+                      bgcolor: isDark ? "background.paper" : "#ffffff",
                       "&:hover": {
                         boxShadow: "0 8px 24px rgba(15, 23, 42, 0.06)",
                         borderColor: "#cbd5e1",
@@ -330,12 +337,18 @@ export default function Submissions() {
                     <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
                       <Stack
                         direction={{ xs: "column", md: "row" }}
-                        justifyContent="space-between"
-                        alignItems={{ xs: "stretch", md: "center" }}
                         spacing={3}
+                        sx={{
+                          justifyContent: "space-between",
+                          alignItems: { xs: "stretch", md: "center" },
+                        }}
                       >
                         {/* Left Info Section */}
-                        <Stack direction="row" spacing={2} alignItems="flex-start" sx={{ minWidth: 0, flex: 1 }}>
+                        <Stack
+                          direction="row"
+                          spacing={2}
+                          sx={{ minWidth: 0, flex: 1, alignItems: "flex-start" }}
+                        >
                           <Avatar
                             variant="rounded"
                             sx={{
@@ -390,10 +403,10 @@ export default function Submissions() {
                         {/* Right Actions & Status Section */}
                         <Stack
                           direction={{ xs: "row", sm: "row" }}
-                          alignItems="center"
-                          justifyContent={{ xs: "space-between", md: "flex-end" }}
                           spacing={{ xs: 1.5, sm: 2.5 }}
                           sx={{
+                            alignItems: "center",
+                            justifyContent: { xs: "space-between", md: "flex-end" },
                             pt: { xs: 1.5, md: 0 },
                             borderTop: { xs: "1px solid #f1f5f9", md: "none" },
                             flexWrap: "wrap",

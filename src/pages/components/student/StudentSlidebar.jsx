@@ -1,60 +1,44 @@
 import {
+  Avatar,
   Box,
+  Divider,
+  Drawer,
   List,
   ListItemButton,
   ListItemIcon,
   ListItemText,
   Typography,
-  IconButton,
-  Drawer,
   useMediaQuery,
   useTheme,
-  Divider,
 } from "@mui/material";
 
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import MenuBookIcon from "@mui/icons-material/MenuBook";
-import AssignmentIcon from "@mui/icons-material/Assignment";
-import UploadFileIcon from "@mui/icons-material/UploadFile";
-import LogoutIcon from "@mui/icons-material/Logout";
-import CloseIcon from "@mui/icons-material/Close";
-import Person from "@mui/icons-material/Person";
+import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
+import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
+import ExploreOutlinedIcon from "@mui/icons-material/ExploreOutlined";
+import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
+import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
+import QuizOutlinedIcon from "@mui/icons-material/QuizOutlined";
+import PersonIcon from "@mui/icons-material/Person";
+import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 
 import { useLocation, useNavigate } from "react-router-dom";
+import { useAppTheme } from "../../../context/useAppTheme";
+
+const menuItems = [
+  { title: "Dashboard", path: "/student/dashboard", icon: DashboardOutlinedIcon },
+  { title: "My learning", path: "/student/my-courses", icon: MenuBookOutlinedIcon },
+  { title: "Assignments", path: "/student/assignments", icon: AssignmentOutlinedIcon },
+  { title: "My submissions", path: "/student/submissions", icon: UploadFileOutlinedIcon },
+  { title: "Quizzes", path: "/student/quizzes", icon: QuizOutlinedIcon },
+  { title: "My profile", path: "/student/profile", icon: PersonIcon },
+];
 
 function StudentSlidebar({ mobileOpen, setMobileOpen }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const location = useLocation();
   const navigate = useNavigate();
-
-  const menuItems = [
-    {
-      title: "Dashboard",
-      path: "/student/dashboard",
-      icon: DashboardIcon,
-    },
-    {
-      title: "My Courses",
-      path: "/student/courses",
-      icon: MenuBookIcon,
-    },
-    {
-      title: "Assignments",
-      path: "/student/assignments",
-      icon: AssignmentIcon,
-    },
-    {
-      title: "My Submissions",
-      path: "/student/submissions",
-      icon: UploadFileIcon,
-    },
-    {
-      title: "My Profile",
-      path: "/student/profile",
-      icon: Person,
-    }
-  ];
+  const { mode } = useAppTheme();
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -64,138 +48,110 @@ function StudentSlidebar({ mobileOpen, setMobileOpen }) {
 
   const handleNavigate = (path) => {
     navigate(path);
-    if (isMobile) {
-      setMobileOpen(false);
-    }
+    if (isMobile) setMobileOpen(false);
   };
 
   const sidebarContent = (
     <Box
       sx={{
-        width: 260,
-        height: "100%",
-        bgcolor: "#1565c0",
-        color: "white",
         display: "flex",
         flexDirection: "column",
+        width: { xs: "min(288px, 86vw)", md: 264 },
+        height: "100%",
         boxSizing: "border-box",
+        bgcolor: mode === "dark" ? "#0b1325" : "#111c32",
+        color: "#fff",
       }}
     >
-      {/* Header section: Logo & Mobile Close button aligned */}
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          px: 2.5,
-          pt: 2.5,
-          pb: 1.5,
-        }}
-      >
-        <Box>
-          <Typography
-            variant="h5"
+      <Box sx={{ px: 2.5, pt: 3, pb: 2.5 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Avatar
+            variant="rounded"
             sx={{
-              fontWeight: 800,
-              color: "white",
-              lineHeight: 1.1,
-              fontSize: "1.5rem",
-              letterSpacing: "0.5px",
+              width: 42,
+              height: 42,
+              borderRadius: 2.5,
+              bgcolor: "#2563eb",
+              color: "#fff",
             }}
           >
-            Extreme
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              color: "#bbdefb",
-              fontSize: "0.75rem",
-              fontWeight: 500,
-              textTransform: "uppercase",
-              letterSpacing: "1px",
-              mt: 0.5,
-            }}
-          >
-            Institute of Knowledge
-          </Typography>
+            <MenuBookOutlinedIcon />
+          </Avatar>
+          <Box>
+            <Typography sx={{ fontWeight: 800, letterSpacing: "-0.02em" }}>
+              EIK Learning
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{ color: "#9eacc2", letterSpacing: "0.08em" }}
+            >
+              STUDENT PORTAL
+            </Typography>
+          </Box>
         </Box>
-
-        {isMobile && (
-          <IconButton
-            onClick={() => setMobileOpen(false)}
-            sx={{
-              color: "white",
-              bgcolor: "rgba(255, 255, 255, 0.1)",
-              p: 0.75,
-              "&:hover": { bgcolor: "rgba(255, 255, 255, 0.2)" },
-            }}
-            aria-label="close menu"
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        )}
       </Box>
 
-      {/* Role Badge Indicator */}
-      <Box sx={{ px: 2.5, pb: 2 }}>
+      <Divider sx={{ borderColor: "rgba(255,255,255,0.09)" }} />
+
+      <Box sx={{ flex: 1, overflowY: "auto", px: 1.5, py: 2 }}>
         <Typography
-          variant="caption"
+          variant="overline"
           sx={{
-            display: "inline-block",
-            bgcolor: "rgba(255, 255, 255, 0.15)",
-            color: "#e3f2fd",
+            display: "block",
             px: 1.25,
-            py: 0.5,
-            borderRadius: 1,
-            fontWeight: 600,
-            fontSize: "0.7rem",
-            letterSpacing: "0.5px",
-            textTransform: "uppercase",
+            pb: 1,
+            color: "#8190a8",
+            fontSize: "0.65rem",
+            fontWeight: 700,
+            letterSpacing: "0.12em",
           }}
         >
-          Student Panel
+          Workspace
         </Typography>
-      </Box>
-
-      <Divider sx={{ borderColor: "rgba(255, 255, 255, 0.12)", mx: 2 }} />
-
-      {/* Menu Links */}
-      <Box sx={{ flex: 1, overflowY: "auto", px: 2, py: 2 }}>
-        <List disablePadding sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+        <List disablePadding sx={{ display: "grid", gap: 0.5 }}>
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+            const isActive =
+              location.pathname === item.path ||
+              location.pathname.startsWith(`${item.path}/`);
 
             return (
               <ListItemButton
-                key={item.title}
+                key={item.path}
+                selected={isActive}
                 onClick={() => handleNavigate(item.path)}
                 sx={{
-                  bgcolor: isActive ? "#0d47a1" : "transparent",
-                  "&:hover": {
-                    bgcolor: "#0d47a1",
-                  },
+                  minHeight: 44,
+                  px: 1.5,
                   borderRadius: 2,
-                  py: 1.25,
-                  px: 2,
-                  color: "white",
-                  boxShadow: isActive ? "0 2px 6px rgba(0,0,0,0.15)" : "none",
+                  color: isActive ? "#fff" : "#b7c2d3",
+                  "&.Mui-selected": {
+                    bgcolor: "#2563eb",
+                    color: "#fff",
+                    "&:hover": { bgcolor: "#1d4ed8" },
+                    "& .MuiListItemIcon-root": { color: "#fff" },
+                  },
+                  "&:hover": {
+                    bgcolor: "rgba(255,255,255,0.07)",
+                    color: "#fff",
+                  },
                 }}
               >
                 <ListItemIcon
                   sx={{
-                    color: "white",
-                    minWidth: 36,
+                    minWidth: 38,
+                    color: "inherit",
                   }}
                 >
                   <Icon fontSize="small" />
                 </ListItemIcon>
                 <ListItemText
                   primary={item.title}
-                  primaryTypographyProps={{
-                    fontSize: "0.9rem",
-                    fontWeight: isActive ? 600 : 400,
-                    letterSpacing: "0.2px",
+                  sx={{
+                    "& .MuiListItemText-primary": {
+                      fontSize: "0.875rem",
+                      fontWeight: isActive ? 700 : 500,
+                    },
                   }}
                 />
               </ListItemButton>
@@ -204,35 +160,31 @@ function StudentSlidebar({ mobileOpen, setMobileOpen }) {
         </List>
       </Box>
 
-      {/* Logout Footer Section */}
-      <Box sx={{ p: 2, mt: "auto" }}>
-        <Divider sx={{ borderColor: "rgba(255, 255, 255, 0.12)", mb: 2 }} />
+      <Box sx={{ p: 1.5 }}>
+        <Divider sx={{ mb: 1.25, borderColor: "rgba(255,255,255,0.09)" }} />
         <ListItemButton
           onClick={handleLogout}
           sx={{
-            color: "white",
+            minHeight: 44,
+            px: 1.5,
             borderRadius: 2,
-            py: 1.2,
-            px: 2,
+            color: "#b7c2d3",
             "&:hover": {
-              bgcolor: "rgba(211, 47, 47, 0.8)",
+              bgcolor: "rgba(248,113,113,0.12)",
+              color: "#fecaca",
             },
-            transition: "background-color 0.2s ease",
           }}
         >
-          <ListItemIcon
-            sx={{
-              color: "white",
-              minWidth: 36,
-            }}
-          >
-            <LogoutIcon fontSize="small" />
+          <ListItemIcon sx={{ minWidth: 38, color: "inherit" }}>
+            <LogoutOutlinedIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText
-            primary="Logout"
-            primaryTypographyProps={{
-              fontSize: "0.9rem",
-              fontWeight: 500,
+            primary="Log out"
+            sx={{
+              "& .MuiListItemText-primary": {
+                fontSize: "0.875rem",
+                fontWeight: 600,
+              },
             }}
           />
         </ListItemButton>
@@ -241,42 +193,36 @@ function StudentSlidebar({ mobileOpen, setMobileOpen }) {
   );
 
   return (
-    <Box
-      component="nav"
-      sx={{ width: { md: 260 }, flexShrink: { md: 0 } }}
-    >
-      {/* Mobile Drawer implementation */}
+    <Box component="nav" sx={{ width: { md: 264 }, flexShrink: { md: 0 } }}>
       <Drawer
         variant="temporary"
         open={mobileOpen}
         onClose={() => setMobileOpen(false)}
-        ModalProps={{
-          keepMounted: true,
-        }}
+        ModalProps={{ keepMounted: true }}
         sx={{
           display: { xs: "block", md: "none" },
           "& .MuiDrawer-paper": {
             boxSizing: "border-box",
-            width: 260,
-            borderRight: "none",
+            width: "min(288px, 86vw)",
+            border: 0,
           },
         }}
       >
         {sidebarContent}
       </Drawer>
 
-      {/* Desktop Permanent Drawer */}
       <Drawer
         variant="permanent"
+        open
         sx={{
           display: { xs: "none", md: "block" },
           "& .MuiDrawer-paper": {
             boxSizing: "border-box",
-            width: 260,
-            borderRight: "none",
+            width: 264,
+            border: 0,
+            bgcolor: mode === "dark" ? "#0b1325" : "#111c32",
           },
         }}
-        open
       >
         {sidebarContent}
       </Drawer>

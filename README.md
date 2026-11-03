@@ -1,16 +1,26 @@
-# React + Vite
+# EIK LMS frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React, Vite, and Material UI frontend for the EIK Learning Management System.
 
-Currently, two official plugins are available:
+## Local development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. Copy `.env.example` to `.env`.
+2. Set `VITE_API_URL` to the backend API URL, including `/api` (for example, `http://localhost:5000/api`).
+3. Install dependencies and run the frontend:
 
-## React Compiler
+   ```sh
+   npm install
+   npm run dev
+   ```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Deploy to Vercel
 
-## Expanding the Oxlint configuration
+Import the frontend GitHub repository as a Vercel project. Use the repository root as the project root and the Vite preset (or let Vercel detect it). The build command is `npm run build`; the output directory is `dist`.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+Add this environment variable in the Vercel project settings for Production, Preview, and Development:
+
+| Name | Value |
+| --- | --- |
+| `VITE_API_URL` | `https://<your-backend-project>.vercel.app/api` |
+
+Use the actual backend deployment URL. Vite embeds `VITE_` variables at build time, so redeploy after changing one. Client-side route refreshes are rewritten to the app entry point by `vercel.json`.

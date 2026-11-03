@@ -501,28 +501,6 @@ const response = await api.post(
           mb: 4,
         }}
       >
-        <Box>
-          <Typography
-            variant="h4"
-            fontWeight="bold"
-            sx={{
-              fontSize: {
-                xs: "1.8rem",
-                md: "2.2rem",
-              },
-            }}
-          >
-            Student Submissions
-          </Typography>
-
-          <Typography
-            color="text.secondary"
-            sx={{ mt: 0.5 }}
-          >
-            Review and grade assignments submitted
-            by your students
-          </Typography>
-        </Box>
 
         <Button
           variant="outlined"

@@ -20,6 +20,7 @@ import ArrowForward from "@mui/icons-material/ArrowForward";
 
 import { useNavigate } from "react-router-dom";
 import api from "../../servises/api";
+import StudentLayout from "../components/student/StudentLayout";
 
 export default function MyCourses() {
   const [enrollments, setEnrollments] = useState([]);
@@ -57,16 +58,17 @@ export default function MyCourses() {
   };
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#f5f7fb", py: 4 }}>
-      <Container maxWidth="xl">
+    <StudentLayout>
+      <Container maxWidth="xl" disableGutters>
         <Box sx={{ mb: 4 }}>
           <Typography
-            variant="h4"
+            component="h2"
             fontWeight={800}
             color="#172554"
             mb={1}
+            sx={{ fontSize: { xs: "1.35rem", sm: "1.65rem" } }}
           >
-            My Courses
+            Your enrollments
           </Typography>
 
           <Typography color="text.secondary">
@@ -85,7 +87,7 @@ export default function MyCourses() {
             <CircularProgress />
           </Box>
         ) : enrollments.length === 0 ? (
-          <Card sx={{ textAlign: "center", p: 5, borderRadius: 3 }}>
+          <Card sx={{ textAlign: "center", p: { xs: 3, sm: 5 }, borderRadius: 3 }}>
             <MenuBook sx={{ fontSize: 60, color: "#94a3b8", mb: 2 }} />
 
             <Typography variant="h6" fontWeight={700} mb={1}>
@@ -316,6 +318,6 @@ export default function MyCourses() {
           </>
         )}
       </Container>
-    </Box>
+    </StudentLayout>
   );
 }

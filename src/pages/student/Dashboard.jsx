@@ -14,6 +14,7 @@ import {
   Grid,
   LinearProgress,
   Typography,
+  useTheme,
 } from "@mui/material";
 
 import MenuBookIcon from "@mui/icons-material/MenuBook";
@@ -23,7 +24,6 @@ import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import SchoolIcon from "@mui/icons-material/School";
-import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import AutoStoriesIcon from "@mui/icons-material/AutoStories";
 import TaskAltIcon from "@mui/icons-material/TaskAlt";
@@ -32,6 +32,8 @@ import StudentLayout from "../components/student/StudentLayout";
 import api from "../../servises/api";
 
 function Dashboard() {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const navigate = useNavigate();
 
   const [dashboardData, setDashboardData] = useState(null);
@@ -149,19 +151,24 @@ function Dashboard() {
 
   const validCourses = myCourses.filter((item) => item.course);
 
-  // REAL PROGRESS CALCULATION:
-  // If the backend supplies a progress field on the enrollment item, use it.
-  // Otherwise, calculate real progress dynamically based on completed assignments/lessons or default safely to 0%.
   const calculateRealProgress = (enrollment) => {
-    if (typeof enrollment.progress === "number") return enrollment.progress;
-    if (enrollment.completedLessons && enrollment.totalLessons) {
-      return Math.round((enrollment.completedLessons / enrollment.totalLessons) * 100);
+    if (typeof enrollment.progress === "number") {
+      return Math.max(0, Math.min(Math.round(enrollment.progress), 100));
     }
-    // Fallback based on submission ratio if available, else structural default
-    const totalAssignments = dashboardData?.assignments || 1;
-    const submittedCount = dashboardData?.submitted || 0;
-    const derived = Math.min(Math.round((submittedCount / totalAssignments) * 100), 100);
-    return isNaN(derived) ? 15 : derived;
+    if (
+      typeof enrollment.completedLessons === "number" &&
+      typeof enrollment.totalLessons === "number" &&
+      enrollment.totalLessons > 0
+    ) {
+      return Math.max(
+        0,
+        Math.min(
+          Math.round((enrollment.completedLessons / enrollment.totalLessons) * 100),
+          100
+        )
+      );
+    }
+    return 0;
   };
 
   // Overall average real progress calculation across all valid courses
@@ -173,7 +180,7 @@ function Dashboard() {
     <StudentLayout>
       <Box
         sx={{
-          p: { xs: 1, sm: 2, md: 3 },
+          p: 0,
           maxWidth: 1600,
           mx: "auto",
         }}
@@ -189,8 +196,8 @@ function Dashboard() {
             mb: 4,
             p: 3.5,
             borderRadius: 4,
-            bgcolor: "#ffffff",
-            border: "1px solid #e2e8f0",
+            bgcolor: isDark ? "background.paper" : "#ffffff",
+            border: `1px solid ${isDark ? theme.palette.divider : "#e2e8f0"}`,
             boxShadow: "0 4px 20px rgba(15, 23, 42, 0.04)",
           }}
         >
@@ -208,24 +215,19 @@ function Dashboard() {
               {user.name ? user.name.charAt(0).toUpperCase() : "S"}
             </Avatar>
             <Box>
-              <Typography variant="h5" fontWeight={800} color="#0f172a">
-                Welcome back, {user.name || "Student"}! 🚀
+              <Typography variant="h5" fontWeight={800} color={isDark ? "text.primary" : "#0f172a"}>
+                Welcome back, {user.name || "Student"}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                Here is your live academic synchronization and tracking dashboard.
+                Here is a snapshot of your courses and academic progress.
               </Typography>
             </Box>
           </Box>
 
           <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
             <Chip
-              icon={<LocalFireDepartmentIcon sx={{ color: "#f97316 !important" }} />}
-              label="Active Learning"
-              sx={{ fontWeight: 700, bgcolor: "#fff7ed", color: "#c2410c", border: "1px solid #ffedd5" }}
-            />
-            <Chip
               icon={<TaskAltIcon sx={{ color: "#2563eb !important" }} />}
-              label={`Real Avg Progress: ${overallRealProgress}%`}
+              label={`Average course progress: ${overallRealProgress}%`}
               sx={{ fontWeight: 700, bgcolor: "#eff6ff", color: "#1d4ed8", border: "1px solid #dbeafe" }}
             />
           </Box>
@@ -287,7 +289,7 @@ function Dashboard() {
                           <Typography
                             variant="h4"
                             fontWeight={800}
-                            sx={{ mt: 1.5, color: "#172554" }}
+                            sx={{ mt: 1.5, color: isDark ? "text.primary" : "#172554" }}
                           >
                             {card.value}
                           </Typography>
@@ -492,7 +494,7 @@ function Dashboard() {
                             sx={{
                               height: 8,
                               borderRadius: 4,
-                              bgcolor: "#f1f5f9",
+                              bgcolor: isDark ? "#263650" : "#f1f5f9",
                               "& .MuiLinearProgress-bar": {
                                 borderRadius: 4,
                                 bgcolor: courseProgress === 100 ? "#15803d" : "#2563eb",
@@ -505,7 +507,7 @@ function Dashboard() {
                           fullWidth
                           variant="contained"
                           startIcon={<PlayArrowIcon />}
-                          onClick={() => navigate(`/student/courses/${course._id}`)}
+                          onClick={() => navigate("/student/assignments")}
                           sx={{
                             py: 1,
                             borderRadius: 2,
@@ -514,7 +516,7 @@ function Dashboard() {
                             boxShadow: "none",
                           }}
                         >
-                          Resume Track
+                          View assignments
                         </Button>
                       </CardContent>
                     </Card>

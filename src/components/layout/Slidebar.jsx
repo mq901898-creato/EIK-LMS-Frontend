@@ -18,9 +18,11 @@ import CloseIcon from "@mui/icons-material/Close";
 
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import getMenuItems from "./MenuItems";
+import { useAppTheme } from "../../context/useAppTheme";
 
 function Sidebar({ mobileOpen, setMobileOpen }) {
   const theme = useTheme();
+  const { mode } = useAppTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const location = useLocation();
   const navigate = useNavigate();
@@ -49,7 +51,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
       sx={{
         width: 260,
         height: "100%",
-        bgcolor: "#1565c0",
+        bgcolor: mode === "dark" ? "#111c32" : "#1565c0",
         color: "white",
         display: "flex",
         flexDirection: "column",
@@ -148,9 +150,11 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
                 to={item.path}
                 onClick={handleNavigate}
                 sx={{
-                  bgcolor: isActive ? "#0d47a1" : "transparent",
+                  bgcolor: isActive
+                    ? mode === "dark" ? "#263650" : "#0d47a1"
+                    : "transparent",
                   "&:hover": {
-                    bgcolor: "#0d47a1",
+                    bgcolor: mode === "dark" ? "#263650" : "#0d47a1",
                   },
                   borderRadius: 2,
                   py: 1.25,
@@ -236,6 +240,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
             boxSizing: "border-box",
             width: 260,
             borderRight: "none",
+            bgcolor: mode === "dark" ? "#111c32" : "#1565c0",
           },
         }}
       >
@@ -251,6 +256,7 @@ function Sidebar({ mobileOpen, setMobileOpen }) {
             boxSizing: "border-box",
             width: 260,
             borderRight: "none",
+            bgcolor: mode === "dark" ? "#111c32" : "#1565c0",
           },
         }}
         open
