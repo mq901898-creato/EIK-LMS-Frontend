@@ -19,15 +19,22 @@ import api from "../../servises/api";
 
 const theme = createTheme({
   palette: {
+    mode: "dark",
     primary: {
-      main: "#1565c0",
-      light: "#42a5f5",
-      dark: "#0d47a1",
+      main: "#42a5f5",
+      light: "#90caf9",
+      dark: "#1565c0",
       contrastText: "#fff",
     },
-    secondary: {
-      main: "#000000",
+    background: {
+      default: "#101827",
+      paper: "#182338",
     },
+    text: {
+      primary: "#e7edf7",
+      secondary: "#a8b3c5",
+    },
+    divider: "#263650",
   },
 });
 
