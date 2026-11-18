@@ -4,9 +4,12 @@ import PeopleIcon from "@mui/icons-material/People";
 import SchoolIcon from "@mui/icons-material/School";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import SettingsIcon from "@mui/icons-material/Settings";
-import AddIcon from "@mui/icons-material/AddBox";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
 import HowToRegIcon from "@mui/icons-material/HowToReg";
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
+import QuizIcon from "@mui/icons-material/Quiz";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 
 const adminMenuItems = [
   {
@@ -35,9 +38,14 @@ const adminMenuItems = [
     icon: AssignmentIcon,
   },
   {
+    title: "WhatsApp Hub",
+    path: "/admin/whatsapp",
+    icon: WhatsAppIcon,
+  },
+  {
     title: "Add Teacher",
     path: "/admin/addTeacher",
-    icon: AddIcon,
+    icon: PersonAddIcon,
   },
   {
     title: "Settings",
@@ -73,9 +81,9 @@ const teacherMenuItems = [
     icon: HowToRegIcon,
   },
   {
-    title: "Quizzes",
+    title: "AI Quiz Studio",
     path: "/teacher/quizzes/create",
-    icon: AssignmentIcon,
+    icon: AutoAwesomeIcon,
   },
 ];
 
@@ -103,8 +111,8 @@ const studentMenuItems = [
   {
     title: "Quizzes",
     path: "/student/quizzes",
-    icon: AssignmentIcon,
-  }
+    icon: QuizIcon,
+  },
 ];
 
 const getMenuItems = (role) => {

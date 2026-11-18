@@ -1,26 +1,26 @@
-
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Alert,
-  Avatar,
   Box,
   Button,
-  Card,
-  CardContent,
-  Chip,
-  CircularProgress,
-  Container,
+  Grid,
   Typography,
+  CardMedia,
+  LinearProgress,
+  IconButton,
+  Tooltip,
+  Skeleton,
 } from "@mui/material";
+import SchoolIcon from "@mui/icons-material/School";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import RefreshIcon from "@mui/icons-material/Refresh";
 
-import School from "@mui/icons-material/School";
-import MenuBook from "@mui/icons-material/MenuBook";
-import Person from "@mui/icons-material/Person";
-import ArrowForward from "@mui/icons-material/ArrowForward";
-
-import { useNavigate } from "react-router-dom";
+import Layout from "../../components/layout/Layout";
+import GlassCard from "../../components/common/GlassCard";
+import StatusBadge from "../../components/common/StatusBadge";
 import api from "../../servises/api";
-import StudentLayout from "../components/student/StudentLayout";
 
 export default function MyCourses() {
   const [enrollments, setEnrollments] = useState([]);
@@ -29,295 +29,229 @@ export default function MyCourses() {
 
   const navigate = useNavigate();
 
+  const fetchMyCourses = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const response = await api.get("/student/my-courses");
+      setEnrollments(Array.isArray(response.data?.enrollments) ? response.data.enrollments : []);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to load your enrolled courses.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchMyCourses = async () => {
-      try {
-        setLoading(true);
-        setError("");
-
-        const response = await api.get("/student/my-courses");
-
-        setEnrollments(response.data.enrollments || []);
-      } catch (err) {
-        setError(
-          err.response?.data?.message ||
-          "Failed to load your courses."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchMyCourses();
   }, []);
 
-  const getStatusColor = (status) => {
-    if (status === "Approved") return "success";
-    if (status === "Rejected") return "error";
-    return "warning";
-  };
-
   return (
-    <StudentLayout>
-      <Container maxWidth="xl" disableGutters>
-        <Box sx={{ mb: 4 }}>
-          <Typography
-            component="h2"
-            fontWeight={800}
-            color="#172554"
-            mb={1}
-            sx={{ fontSize: { xs: "1.35rem", sm: "1.65rem" } }}
-          >
-            Your enrollments
-          </Typography>
+    <Layout>
+      <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 3.5 }}>
+        {/* Header */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: { xs: "flex-start", sm: "center" },
+            flexDirection: { xs: "column", sm: "row" },
+            gap: 2,
+          }}
+        >
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 800 }}>
+              My Enrolled Courses
+            </Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5 }}>
+              Access active curriculum tracks, assignments, and faculty instructor updates.
+            </Typography>
+          </Box>
 
-          <Typography color="text.secondary">
-            View your enrollment requests and course statuses.
-          </Typography>
+          <Box sx={{ display: "flex", gap: 1.5 }}>
+            <Tooltip title="Refresh">
+              <IconButton
+                onClick={fetchMyCourses}
+                disabled={loading}
+                sx={{
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  borderRadius: "8px",
+                  p: 1,
+                }}
+              >
+                <RefreshIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<MenuBookIcon />}
+              onClick={() => navigate("/student/courses")}
+            >
+              Browse Catalog
+            </Button>
+          </Box>
         </Box>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
+          <Alert severity="error" onClose={() => setError("")}>
             {error}
           </Alert>
         )}
 
+        {/* Content */}
         {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-            <CircularProgress />
-          </Box>
+          <Grid container spacing={3}>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Grid item xs={12} sm={6} md={4} key={i}>
+                <GlassCard sx={{ p: 2.5 }}>
+                  <Skeleton variant="rectangular" height={140} sx={{ borderRadius: "8px", mb: 2 }} />
+                  <Skeleton width="80%" height={28} />
+                  <Skeleton width="40%" height={20} sx={{ mb: 2 }} />
+                  <Skeleton height={10} sx={{ mb: 2 }} />
+                  <Skeleton height={36} />
+                </GlassCard>
+              </Grid>
+            ))}
+          </Grid>
         ) : enrollments.length === 0 ? (
-          <Card sx={{ textAlign: "center", p: { xs: 3, sm: 5 }, borderRadius: 3 }}>
-            <MenuBook sx={{ fontSize: 60, color: "#94a3b8", mb: 2 }} />
-
-            <Typography variant="h6" fontWeight={700} mb={1}>
-              You haven't enrolled in any courses yet
+          <GlassCard
+            sx={{
+              textAlign: "center",
+              py: 8,
+              px: 3,
+              border: "1px dashed rgba(255, 255, 255, 0.15)",
+            }}
+          >
+            <SchoolIcon sx={{ fontSize: 56, color: "text.secondary", mb: 1.5 }} />
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              No enrolled courses yet
             </Typography>
-
-            <Typography color="text.secondary" mb={3}>
-              Explore our available courses and send an enrollment request.
+            <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5, mb: 3 }}>
+              Explore the academy curriculum catalog and submit an enrollment request to begin learning.
             </Typography>
-
             <Button
               variant="contained"
-              endIcon={<ArrowForward />}
-             onClick={() => navigate("/student/dashboard")}
+              onClick={() => navigate("/student/courses")}
+              startIcon={<ArrowForwardIcon />}
             >
-              Explore Courses
+              Explore Course Catalog
             </Button>
-          </Card>
+          </GlassCard>
         ) : (
-          <>
-            <Typography color="text.secondary" mb={2}>
-              Total enrollments: {enrollments.length}
-            </Typography>
+          <Grid container spacing={3}>
+            {enrollments.map((item) => {
+              const course = item.course || {};
+              const progress = typeof item.progress === "number" ? Math.round(item.progress) : 0;
 
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(auto-fill, minmax(min(100%, 280px), 1fr))",
-                gap: 3,
-              }}
-            >
-              {enrollments.map((enrollment) => {
-                const course = enrollment.course;
-
-                if (!course || typeof course !== "object") {
-                  return (
-                    <Card key={enrollment._id} sx={{ borderRadius: 3, p: 2 }}>
-                      <Typography color="text.secondary">
-                        Course details are unavailable.
-                      </Typography>
-                    </Card>
-                  );
-                }
-
-                const hasThumbnail =
-                  course.thumbnail &&
-                  (course.thumbnail.startsWith("data:") ||
-                    course.thumbnail.startsWith("http"));
-
-                return (
-                  <Card
-                    key={enrollment._id}
+              return (
+                <Grid item xs={12} sm={6} md={4} key={item._id}>
+                  <GlassCard
+                    hover
                     sx={{
-                      borderRadius: 3,
-                      overflow: "hidden",
+                      height: "100%",
                       display: "flex",
                       flexDirection: "column",
-                      boxShadow: "0 4px 18px rgba(15,23,42,0.06)",
-                      transition: "0.2s",
-                      "&:hover": {
-                        transform: "translateY(-4px)",
-                        boxShadow: "0 10px 24px rgba(15,23,42,0.10)",
-                      },
+                      justifyContent: "space-between",
                     }}
                   >
-                    {hasThumbnail ? (
-                      <Box
-                        component="img"
-                        src={course.thumbnail}
-                        alt={course.title}
-                        sx={{
-                          width: "100%",
-                          height: 170,
-                          objectFit: "cover",
-                        }}
-                      />
-                    ) : (
-                      <Box
-                        sx={{
-                          height: 140,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          bgcolor: "#dbeafe",
-                        }}
-                      >
-                        <School sx={{ fontSize: 60, color: "#2563eb" }} />
-                      </Box>
-                    )}
-
-                    <CardContent
-                      sx={{
-                        p: 2.5,
-                        display: "flex",
-                        flexDirection: "column",
-                        flexGrow: 1,
-                      }}
-                    >
-                      <Typography
-                        variant="h6"
-                        fontWeight={800}
-                        color="#172554"
-                        mb={1}
-                      >
-                        {course.title}
-                      </Typography>
-
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{
-                          mb: 2,
-                          lineHeight: 1.7,
-                          display: "-webkit-box",
-                          WebkitLineClamp: 3,
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden",
-                        }}
-                      >
-                        {course.description || "No description available."}
-                      </Typography>
-
-                      <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
-                        <Avatar
-                          sx={{
-                            width: 32,
-                            height: 32,
-                            bgcolor: "#e0e7ff",
-                            color: "#4338ca",
-                          }}
-                        >
-                          <Person fontSize="small" />
-                        </Avatar>
-
-                        <Box>
-                          <Typography variant="caption" color="text.secondary">
-                            Instructor
-                          </Typography>
-
-                          <Typography variant="body2" fontWeight={600}>
-                            {course.teacher?.name || "Instructor"}
-                          </Typography>
-                        </Box>
-                      </Box>
-
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        mb={2}
-                      >
-                        Category: {course.category || "General"}
-                      </Typography>
-
-                      <Box sx={{ mt: "auto" }}>
+                    <Box>
+                      {course.thumbnail ? (
+                        <CardMedia
+                          component="img"
+                          height="160"
+                          image={course.thumbnail}
+                          alt={course.title || "Course"}
+                          sx={{ objectFit: "cover" }}
+                        />
+                      ) : (
                         <Box
                           sx={{
+                            height: 140,
                             display: "flex",
-                            justifyContent: "space-between",
                             alignItems: "center",
-                            gap: 1,
-                            flexWrap: "wrap",
+                            justifyContent: "center",
+                            bgcolor: "rgba(99, 102, 241, 0.08)",
+                            color: "#6366f1",
+                          }}
+                        >
+                          <SchoolIcon sx={{ fontSize: 50 }} />
+                        </Box>
+                      )}
+
+                      <Box sx={{ p: 2.5 }}>
+                        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1.5 }}>
+                          <Typography variant="caption" sx={{ color: "#818cf8", fontWeight: 700, textTransform: "uppercase" }}>
+                            {course.category || "Academy Track"}
+                          </Typography>
+                          <StatusBadge status={item.status} />
+                        </Box>
+
+                        <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.3, mb: 1 }}>
+                          {course.title || "Course"}
+                        </Typography>
+
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: "text.secondary",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
                             mb: 2,
                           }}
                         >
-                          <Typography
-                            variant="h6"
-                            fontWeight={800}
-                            color="#1d4ed8"
-                          >
-                            Rs. {Number(course.price || 0).toLocaleString()}
-                          </Typography>
+                          {course.description || "Continue mastering your coursework syllabus."}
+                        </Typography>
 
-                          <Chip
-                            label={enrollment.status || "Pending"}
-                            color={getStatusColor(enrollment.status)}
-                            size="small"
-                          />
-                        </Box>
-
-
-                        {enrollment.status === "Approved" && (
-                          <Box>
-                            <Alert severity="success" icon={false} sx={{ mb: 2 }}>
-                              You're enrolled in this course!
-                            </Alert>
-
-                            <Button
-                              fullWidth
-                              variant="contained"
-                              endIcon={<ArrowForward />}
-                              onClick={() =>
-                               navigate("/student/dashboard")
-                              }
+                        {/* Progress */}
+                        {item.status === "Approved" && (
+                          <Box sx={{ mt: "auto", pt: 1 }}>
+                            <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
+                              <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                                Syllabus Progress
+                              </Typography>
+                              <Typography variant="caption" sx={{ fontWeight: 700, color: "#6366f1" }}>
+                                {progress}%
+                              </Typography>
+                            </Box>
+                            <LinearProgress
+                              variant="determinate"
+                              value={progress}
                               sx={{
-                                py: 1.2,
-                                borderRadius: 2,
-                                textTransform: "none",
-                                fontWeight: 700,
-                                bgcolor: "#2563eb",
-                                "&:hover": {
-                                  bgcolor: "#1d4ed8",
+                                height: 6,
+                                borderRadius: 3,
+                                bgcolor: "rgba(255, 255, 255, 0.08)",
+                                "& .MuiLinearProgress-bar": {
+                                  bgcolor: progress === 100 ? "#10b981" : "#6366f1",
                                 },
                               }}
-                            >
-                              Enter Course
-                            </Button>
+                            />
                           </Box>
                         )}
-
-                        {enrollment.status === "Pending" && (
-                          <Alert severity="warning" icon={false}>
-                            Waiting for teacher approval.
-                          </Alert>
-                        )}
-
-                        {enrollment.status === "Rejected" && (
-                          <Alert severity="error" icon={false}>
-                            Your enrollment request was rejected.
-                          </Alert>
-                        )}
                       </Box>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </Box>
-          </>
+                    </Box>
+
+                    <Box sx={{ p: 2.5, pt: 0 }}>
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        size="small"
+                        onClick={() => navigate("/student/assignments")}
+                        disabled={item.status !== "Approved"}
+                      >
+                        {item.status === "Approved" ? "Access Coursework" : "Admission Pending"}
+                      </Button>
+                    </Box>
+                  </GlassCard>
+                </Grid>
+              );
+            })}
+          </Grid>
         )}
-      </Container>
-    </StudentLayout>
+      </Box>
+    </Layout>
   );
 }

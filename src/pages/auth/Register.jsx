@@ -1,58 +1,43 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
-
 import {
   Alert,
-  Avatar,
   Box,
   Button,
   CircularProgress,
   Container,
-  FormControl,
-  FormLabel,
+  IconButton,
   InputAdornment,
   Link,
-  Paper,
   Stack,
   TextField,
+  Typography,
+  Chip,
   ToggleButton,
   ToggleButtonGroup,
-  Typography,
 } from "@mui/material";
-import { alpha } from "@mui/material/styles";
+import SchoolIcon from "@mui/icons-material/School";
+import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
+import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutlined";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
+import GlassCard from "../../components/common/GlassCard";
+import { useAppTheme } from "../../context/useAppTheme";
 import api from "../../servises/api";
 
-const GENDERS = ["Male", "Female", "Other"];
-
 const HIGHLIGHTS = [
-  {
-    title: "Learn anytime",
-    text: "Access your courses and material whenever you need them.",
-  },
-  {
-    title: "Track progress",
-    text: "See your results and growth in one place.",
-  },
-  {
-    title: "Stay connected",
-    text: "Reach your instructors without leaving the portal.",
-  },
+  "Immediate access to enrolled course curriculum & materials",
+  "Automated WhatsApp alerts for test schedules & grading",
+  "Interactive AI-assisted quizzes and immediate scorecard",
+  "Verified academy student certificate upon syllabus completion",
 ];
 
-const inputSx = {
-  "& .MuiOutlinedInput-root": {
-    borderRadius: 2,
-    bgcolor: (theme) => alpha(theme.palette.text.primary, 0.025),
-    transition: "background-color 0.2s ease",
-    "&:hover": {
-      bgcolor: (theme) => alpha(theme.palette.text.primary, 0.04),
-    },
-    "&.Mui-focused": { bgcolor: "background.paper" },
-  },
-};
-
-function Register() {
+export default function Register() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -64,6 +49,22 @@ function Register() {
   const [feedback, setFeedback] = useState(null);
 
   const navigate = useNavigate();
+  const { mode } = useAppTheme();
+  const isDark = mode === "dark";
+
+  // Semantic color tokens
+  const textPrimary = isDark ? "#f8fafc" : "#0f172a";
+  const textSecondary = isDark ? "#94a3b8" : "#475569";
+  const textMuted = isDark ? "#64748b" : "#94a3b8";
+  const panelBg = isDark ? "rgba(11, 15, 25, 0.95)" : "rgba(241, 245, 249, 0.95)";
+  const formBg = isDark ? "rgba(11, 15, 25, 0.75)" : "rgba(255, 255, 255, 0.9)";
+  const dividerColor = isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)";
+  const borderColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)";
+  const pageGradient = isDark
+    ? "radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.12) 0%, transparent 40%), radial-gradient(circle at 85% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 40%)"
+    : "radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.06) 0%, transparent 40%), radial-gradient(circle at 85% 80%, rgba(16, 185, 129, 0.04) 0%, transparent 40%)";
+  const toggleBg = isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.02)";
+  const toggleBorderColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.12)";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -73,29 +74,26 @@ function Register() {
     setFeedback(null);
 
     try {
-      const response = await api.post("/student/register", {
-        name,
-        email,
+      await api.post("/student/register", {
+        name: name.trim(),
+        email: email.trim(),
         password,
-        phone,
+        phone: phone.trim(),
         Gender: gender,
         role: "student",
       });
 
-      console.log(response.data);
-
       setFeedback({
         type: "success",
-        message: "Student registered successfully. Redirecting to login...",
+        message: "Account created successfully! Redirecting you to sign in...",
       });
 
-      setTimeout(() => navigate("/login"), 1200);
-    } catch (error) {
-      console.error("STUDENT REGISTRATION ERROR:", error);
-
+      setTimeout(() => navigate("/login"), 1500);
+    } catch (err) {
+      console.error("Student registration error:", err);
       setFeedback({
         type: "error",
-        message: error.response?.data?.message || "Registration failed",
+        message: err.response?.data?.message || "Registration failed. Please check your details.",
       });
       setLoading(false);
     }
@@ -108,296 +106,273 @@ function Register() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        py: { xs: 0, sm: 4 },
-        px: { xs: 0, sm: 2 },
-        background: (theme) =>
-          `linear-gradient(135deg, ${alpha(
-            theme.palette.primary.main,
-            0.1
-          )} 0%, ${theme.palette.background.default} 55%)`,
+        bgcolor: isDark ? "#030712" : "#f8fafc",
+        backgroundImage: pageGradient,
+        p: { xs: 2, sm: 4 },
       }}
     >
-      <Container maxWidth="lg" disableGutters sx={{ maxWidth: { sm: 1000 } }}>
-        <Paper
-          elevation={0}
+      <Container maxWidth="lg" sx={{ maxWidth: { sm: 1080 } }}>
+        <GlassCard
           sx={{
             display: "flex",
             flexDirection: { xs: "column", md: "row" },
             overflow: "hidden",
-            minHeight: { xs: "100vh", sm: "auto", md: 640 },
-            borderRadius: { xs: 0, sm: 4 },
-            border: { xs: "none", sm: "1px solid" },
-            borderColor: "divider",
-            boxShadow: {
-              xs: "none",
-              sm: "0 24px 60px rgba(15, 23, 42, 0.12)",
-            },
+            boxShadow: isDark
+              ? "0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 40px rgba(99, 102, 241, 0.1)"
+              : "0 25px 60px -15px rgba(0, 0, 0, 0.12), 0 0 40px rgba(99, 102, 241, 0.06)",
+            border: `1px solid ${borderColor}`,
           }}
         >
-          {/* Brand panel */}
+          {/* Left Brand Showcase Panel */}
           <Box
             sx={{
-              position: "relative",
-              overflow: "hidden",
-              flex: { md: "0 0 42%" },
-              color: "primary.contrastText",
-              p: { xs: 3, sm: 4, md: 5 },
+              flex: 1.1,
+              p: { xs: 3.5, sm: 5, md: 6 },
+              bgcolor: panelBg,
+              borderRight: { md: `1px solid ${dividerColor}` },
+              borderBottom: { xs: `1px solid ${dividerColor}`, md: "none" },
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
-              gap: 4,
-              background: (theme) =>
-                `linear-gradient(155deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
             }}
           >
-            {/* Decorative shapes */}
-            <Box
-              sx={{
-                position: "absolute",
-                width: 280,
-                height: 280,
-                borderRadius: "50%",
-                top: -90,
-                right: -90,
-                bgcolor: "rgba(255,255,255,0.08)",
-              }}
-            />
-            <Box
-              sx={{
-                position: "absolute",
-                width: 200,
-                height: 200,
-                borderRadius: "50%",
-                bottom: -70,
-                left: -60,
-                bgcolor: "rgba(255,255,255,0.06)",
-                display: { xs: "none", md: "block" },
-              }}
-            />
-
-            <Stack
-              direction="row"
-              alignItems="center"
-              spacing={1.5}
-              sx={{ position: "relative" }}
-            >
-              <Avatar
-                variant="rounded"
-                sx={{
-                  width: 42,
-                  height: 42,
-                  bgcolor: "rgba(255,255,255,0.2)",
-                  color: "inherit",
-                  fontWeight: 800,
-                  borderRadius: 2,
-                }}
-              >
-                S
-              </Avatar>
-              <Typography variant="h6" fontWeight={700} letterSpacing={0.3}>
-                Student Portal
-              </Typography>
-            </Stack>
-
-            <Box sx={{ position: "relative" }}>
-              <Typography
-                variant="h4"
-                fontWeight={800}
-                gutterBottom
-                sx={{
-                  fontSize: { xs: "1.6rem", md: "2.1rem" },
-                  lineHeight: 1.2,
-                }}
-              >
-                Start your learning journey today
-              </Typography>
-              <Typography sx={{ opacity: 0.85, maxWidth: 380 }}>
-                Create your student account in a minute and get access to
-                everything you need.
-              </Typography>
-            </Box>
-
-            <Stack
-              spacing={2}
-              sx={{ position: "relative", display: { xs: "none", md: "flex" } }}
-            >
-              {HIGHLIGHTS.map((item) => (
-                <Stack
-                  key={item.title}
-                  direction="row"
-                  spacing={1.75}
-                  alignItems="flex-start"
+            <Box>
+              {/* Academy Logo */}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.75, mb: 4 }}>
+                <Box
+                  sx={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: "12px",
+                    bgcolor: "rgba(99, 102, 241, 0.18)",
+                    border: "1px solid rgba(99, 102, 241, 0.4)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#818cf8",
+                    boxShadow: "0 0 20px rgba(99, 102, 241, 0.3)",
+                  }}
                 >
-                  <Box
+                  <SchoolIcon sx={{ fontSize: 26 }} />
+                </Box>
+                <Box>
+                  <Typography
+                    variant="h5"
+                    sx={{ fontWeight: 800, color: textPrimary, lineHeight: 1.1, letterSpacing: "-0.02em" }}
+                  >
+                    Extreme Institute
+                  </Typography>
+                  <Typography
+                    variant="caption"
                     sx={{
-                      width: 26,
-                      height: 26,
-                      flexShrink: 0,
-                      mt: "2px",
-                      borderRadius: "50%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      bgcolor: "rgba(255,255,255,0.2)",
-                      fontSize: 14,
+                      color: "#818cf8",
+                      fontSize: "0.72rem",
                       fontWeight: 700,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
                     }}
                   >
-                    ✓
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle2" fontWeight={700}>
-                      {item.title}
+                    Student Admissions Portal
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Chip
+                label="JOIN THE ACADEMY"
+                size="small"
+                sx={{
+                  bgcolor: "rgba(16, 185, 129, 0.12)",
+                  color: "#10b981",
+                  border: "1px solid rgba(16, 185, 129, 0.3)",
+                  fontWeight: 700,
+                  fontSize: "0.68rem",
+                  letterSpacing: "0.06em",
+                  mb: 2.5,
+                }}
+              />
+
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 800,
+                  color: textPrimary,
+                  lineHeight: 1.25,
+                  mb: 2,
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                Start Your Learning Experience.
+              </Typography>
+
+              <Typography variant="body2" sx={{ color: textSecondary, mb: 4, lineHeight: 1.6 }}>
+                Create your student profile to access registered coursework, submit homework,
+                receive faculty reviews, and take automated assessments.
+              </Typography>
+
+              {/* Benefits */}
+              <Stack spacing={2} sx={{ mb: 4 }}>
+                {HIGHLIGHTS.map((item, index) => (
+                  <Box key={index} sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <CheckCircleOutlineIcon sx={{ color: "#10b981", fontSize: 20, flexShrink: 0 }} />
+                    <Typography variant="body2" sx={{ color: isDark ? "#cbd5e1" : "#334155", fontSize: "0.85rem" }}>
+                      {item}
                     </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                      {item.text}
-                    </Typography>
                   </Box>
-                </Stack>
-              ))}
-            </Stack>
+                ))}
+              </Stack>
+            </Box>
+
+            <Box sx={{ pt: 2, borderTop: `1px solid ${dividerColor}` }}>
+              <Typography variant="caption" sx={{ color: textMuted }}>
+                Already registered? Proceed to the sign-in form.
+              </Typography>
+            </Box>
           </Box>
 
-          {/* Form panel */}
+          {/* Right Form Panel */}
           <Box
             sx={{
-              flex: 1,
-              bgcolor: "background.paper",
-              p: { xs: 3, sm: 5, md: 6 },
+              flex: 1.15,
+              p: { xs: 3.5, sm: 5, md: 6 },
               display: "flex",
               flexDirection: "column",
               justifyContent: "center",
+              bgcolor: formBg,
             }}
           >
-            <Typography variant="h4" fontWeight={800} sx={{ fontSize: { xs: "1.5rem", sm: "1.9rem" } }}>
-              Create account
-            </Typography>
-            <Typography color="text.secondary" sx={{ mt: 0.75, mb: 3.5 }}>
-              Fill in your details to register as a student.
-            </Typography>
+            <Box sx={{ mb: 3.5 }}>
+              <Typography variant="h5" sx={{ fontWeight: 800, color: textPrimary, mb: 0.5 }}>
+                Student Registration
+              </Typography>
+              <Typography variant="body2" sx={{ color: textSecondary }}>
+                Fill out the required information to activate your account.
+              </Typography>
+            </Box>
 
             {feedback && (
-              <Alert
-                severity={feedback.type}
-                variant="outlined"
-                sx={{ mb: 3, borderRadius: 2 }}
-              >
+              <Alert severity={feedback.type} sx={{ mb: 3 }} onClose={() => setFeedback(null)}>
                 {feedback.message}
               </Alert>
             )}
 
-            <Box
-              component="form"
-              onSubmit={handleSubmit}
-              sx={{
-                display: "grid",
-                gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-                columnGap: 2,
-                rowGap: 2.5,
-              }}
-            >
+            <Box component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 2.25 }}>
               <TextField
                 label="Full Name"
+                required
+                fullWidth
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                autoComplete="name"
-                fullWidth
-                required
-                sx={inputSx}
-              />
-
-              <TextField
-                label="Email Address"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-                fullWidth
-                required
-                sx={inputSx}
-              />
-
-              <TextField
-                label="Password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="new-password"
-                fullWidth
-                required
-                sx={inputSx}
+                placeholder="e.g. John Doe"
+                size="small"
                 InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <Button
-                        size="small"
-                        onClick={() => setShowPassword((prev) => !prev)}
-                        sx={{
-                          textTransform: "none",
-                          minWidth: 0,
-                          fontWeight: 600,
-                        }}
-                      >
-                        {showPassword ? "Hide" : "Show"}
-                      </Button>
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PersonOutlinedIcon sx={{ color: textMuted, fontSize: 20 }} />
                     </InputAdornment>
                   ),
                 }}
               />
 
               <TextField
-                label="Phone Number"
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                autoComplete="tel"
+                label="Email Address"
+                type="email"
+                required
                 fullWidth
-                sx={inputSx}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="john@example.com"
+                size="small"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EmailOutlinedIcon sx={{ color: textMuted, fontSize: 20 }} />
+                    </InputAdornment>
+                  ),
+                }}
               />
 
-              <FormControl sx={{ gridColumn: { sm: "1 / -1" } }}>
-                <FormLabel
-                  sx={{
-                    mb: 1,
-                    fontSize: "0.875rem",
-                    fontWeight: 600,
-                    color: "text.primary",
-                    "&.Mui-focused": { color: "text.primary" },
-                  }}
-                >
-                  Gender
-                </FormLabel>
+              <TextField
+                label="Phone (WhatsApp Enabled)"
+                required
+                fullWidth
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+923001234567"
+                size="small"
+                helperText="Required for automated lesson & fee alerts"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PhoneOutlinedIcon sx={{ color: textMuted, fontSize: 20 }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
 
+              <TextField
+                label="Password"
+                type={showPassword ? "text" : "password"}
+                required
+                fullWidth
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Minimum 6 characters"
+                size="small"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LockOutlinedIcon sx={{ color: textMuted, fontSize: 20 }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                        size="small"
+                        sx={{ color: textMuted }}
+                      >
+                        {showPassword ? (
+                          <VisibilityOffOutlinedIcon fontSize="small" />
+                        ) : (
+                          <VisibilityOutlinedIcon fontSize="small" />
+                        )}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+
+              {/* Gender Toggle */}
+              <Box>
+                <Typography variant="caption" sx={{ color: textSecondary, display: "block", mb: 0.75 }}>
+                  Gender Specification
+                </Typography>
                 <ToggleButtonGroup
-                  exclusive
-                  fullWidth
-                  color="primary"
                   value={gender}
-                  onChange={(_, value) => value && setGender(value)}
-                  aria-label="Gender"
+                  exclusive
+                  onChange={(e, val) => val && setGender(val)}
+                  size="small"
+                  fullWidth
                   sx={{
+                    bgcolor: toggleBg,
                     "& .MuiToggleButton-root": {
-                      py: 1.1,
-                      textTransform: "none",
-                      fontWeight: 600,
-                    },
-                    "& .MuiToggleButtonGroup-grouped:first-of-type": {
-                      borderTopLeftRadius: 8,
-                      borderBottomLeftRadius: 8,
-                    },
-                    "& .MuiToggleButtonGroup-grouped:last-of-type": {
-                      borderTopRightRadius: 8,
-                      borderBottomRightRadius: 8,
+                      color: textSecondary,
+                      borderColor: toggleBorderColor,
+                      "&.Mui-selected": {
+                        bgcolor: "rgba(99, 102, 241, 0.15)",
+                        color: "#818cf8",
+                        borderColor: "#6366f1",
+                        fontWeight: 700,
+                      },
                     },
                   }}
                 >
-                  {GENDERS.map((g) => (
-                    <ToggleButton key={g} value={g}>
-                      {g}
-                    </ToggleButton>
-                  ))}
+                  <ToggleButton value="Male">Male</ToggleButton>
+                  <ToggleButton value="Female">Female</ToggleButton>
+                  <ToggleButton value="Other">Other</ToggleButton>
                 </ToggleButtonGroup>
-              </FormControl>
+              </Box>
 
               <Button
                 type="submit"
@@ -405,51 +380,41 @@ function Register() {
                 size="large"
                 fullWidth
                 disabled={loading}
+                endIcon={!loading && <ArrowForwardIcon />}
                 sx={{
-                  gridColumn: { sm: "1 / -1" },
-                  mt: 1,
-                  py: 1.5,
-                  borderRadius: 2,
-                  textTransform: "none",
+                  py: 1.3,
                   fontWeight: 700,
-                  fontSize: "1rem",
-                  boxShadow: (theme) =>
-                    `0 8px 20px ${alpha(theme.palette.primary.main, 0.35)}`,
-                  "&:hover": {
-                    boxShadow: (theme) =>
-                      `0 10px 24px ${alpha(theme.palette.primary.main, 0.45)}`,
-                  },
+                  fontSize: "0.95rem",
+                  bgcolor: "#6366f1",
+                  mt: 1,
+                  "&:hover": { bgcolor: "#4f46e5" },
                 }}
               >
-                {loading ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  "Register Student"
-                )}
+                {loading ? <CircularProgress size={24} sx={{ color: "#ffffff" }} /> : "Complete Registration"}
               </Button>
+            </Box>
 
-              <Typography
-                variant="body2"
-                textAlign="center"
-                color="text.secondary"
-                sx={{ gridColumn: { sm: "1 / -1" }, mt: 0.5 }}
-              >
-                Already have an account?{" "}
+            {/* Back to Login */}
+            <Box sx={{ mt: 3.5, textAlign: "center" }}>
+              <Typography variant="body2" sx={{ color: textSecondary }}>
+                Already registered with the academy?{" "}
                 <Link
                   component={RouterLink}
                   to="/login"
-                  underline="hover"
-                  fontWeight={700}
+                  sx={{
+                    color: "#818cf8",
+                    fontWeight: 700,
+                    textDecoration: "none",
+                    "&:hover": { textDecoration: "underline" },
+                  }}
                 >
-                  Login
+                  Sign in here
                 </Link>
               </Typography>
             </Box>
           </Box>
-        </Paper>
+        </GlassCard>
       </Container>
     </Box>
   );
 }
-
-export default Register;

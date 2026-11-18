@@ -189,21 +189,53 @@ export default function CreateQuiz() {
 
   return (
     <Layout>
-      <Container maxWidth="xl" sx={{ py: 5 }}>
+      <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 3.5 }}>
+        {/* Header Bar */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: { xs: "flex-start", sm: "center" },
+            flexDirection: { xs: "column", sm: "row" },
+            gap: 2,
+          }}
+        >
+          <Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Typography variant="h4" sx={{ fontWeight: 800 }}>
+                AI Quiz Studio
+              </Typography>
+              <Chip
+                label="Powered by Gemini"
+                size="small"
+                icon={<AutoAwesomeIcon sx={{ fontSize: "14px !important" }} />}
+                sx={{
+                  bgcolor: "rgba(99, 102, 241, 0.12)",
+                  color: "#818cf8",
+                  fontWeight: 700,
+                  fontSize: "0.72rem",
+                }}
+              />
+            </Box>
+            <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5 }}>
+              Automatically generate multiple choice assessments from course curriculum parameters.
+            </Typography>
+          </Box>
+        </Box>
 
-      {/* Global Alerts */}
-      <Stack spacing={2} sx={{ mb: 3 }}>
-        {error && (
-          <Alert severity="error" onClose={() => setError("")} sx={{ borderRadius: 3, fontWeight: 500 }}>
-            {error}
-          </Alert>
-        )}
-        {message && (
-          <Alert severity="success" onClose={() => setMessage("")} sx={{ borderRadius: 3, fontWeight: 500 }}>
-            {message}
-          </Alert>
-        )}
-      </Stack>
+        {/* Global Alerts */}
+        <Stack spacing={2}>
+          {error && (
+            <Alert severity="error" onClose={() => setError("")}>
+              {error}
+            </Alert>
+          )}
+          {message && (
+            <Alert severity="success" onClose={() => setMessage("")}>
+              {message}
+            </Alert>
+          )}
+        </Stack>
 
       <Grid container spacing={4}>
         {/* Left Column: Generator Form & Generated Preview */}
@@ -679,7 +711,7 @@ export default function CreateQuiz() {
           </Paper>
         </Grid>
       </Grid>
-    </Container>
+      </Box>
     </Layout>
   );
 }

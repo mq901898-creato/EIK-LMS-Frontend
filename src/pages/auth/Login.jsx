@@ -1,71 +1,39 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
-import { createTheme, ThemeProvider, alpha } from "@mui/material/styles";
 import {
   Alert,
-  Avatar,
   Box,
   Button,
   CircularProgress,
   Container,
+  IconButton,
   InputAdornment,
   Link,
-  Paper,
   Stack,
   TextField,
   Typography,
+  Chip,
 } from "@mui/material";
+import SchoolIcon from "@mui/icons-material/School";
+import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutlined";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+
+import GlassCard from "../../components/common/GlassCard";
+import { useAppTheme } from "../../context/useAppTheme";
 import api from "../../servises/api";
 
-const theme = createTheme({
-  palette: {
-    mode: "dark",
-    primary: {
-      main: "#42a5f5",
-      light: "#90caf9",
-      dark: "#1565c0",
-      contrastText: "#fff",
-    },
-    background: {
-      default: "#101827",
-      paper: "#182338",
-    },
-    text: {
-      primary: "#e7edf7",
-      secondary: "#a8b3c5",
-    },
-    divider: "#263650",
-  },
-});
-
 const HIGHLIGHTS = [
-  {
-    title: "Learn anytime",
-    text: "Access your courses and material whenever you need them.",
-  },
-  {
-    title: "Track progress",
-    text: "See your results and growth in one place.",
-  },
-  {
-    title: "Stay connected",
-    text: "Reach your instructors without leaving the portal.",
-  },
+  "Comprehensive Multi-Role LMS (Admin, Faculty, Student)",
+  "Live WhatsApp Broadcast & Automated Delivery Gateway",
+  "AI-Powered Quiz Generation & Instant Syllabus Assessments",
+  "Real-Time Student Analytics & Submission Tracking",
 ];
 
-const inputSx = {
-  "& .MuiOutlinedInput-root": {
-    borderRadius: 2,
-    bgcolor: (t) => alpha(t.palette.text.primary, 0.025),
-    transition: "background-color 0.2s ease",
-    "&:hover": {
-      bgcolor: (t) => alpha(t.palette.text.primary, 0.04),
-    },
-    "&.Mui-focused": { bgcolor: "background.paper" },
-  },
-};
-
-function Login() {
+export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -73,338 +41,253 @@ function Login() {
   const [error, setError] = useState("");
 
   const navigate = useNavigate();
+  const { mode } = useAppTheme();
+  const isDark = mode === "dark";
+
+  // Semantic color tokens
+  const textPrimary = isDark ? "#f8fafc" : "#0f172a";
+  const textSecondary = isDark ? "#94a3b8" : "#475569";
+  const textMuted = isDark ? "#64748b" : "#94a3b8";
+  const panelBg = isDark ? "rgba(11, 15, 25, 0.95)" : "rgba(241, 245, 249, 0.95)";
+  const formBg = isDark ? "rgba(11, 15, 25, 0.75)" : "rgba(255, 255, 255, 0.9)";
+  const dividerColor = isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)";
+  const borderColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)";
+  const pageGradient = isDark
+    ? "radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.12) 0%, transparent 40%), radial-gradient(circle at 85% 80%, rgba(6, 182, 212, 0.08) 0%, transparent 40%)"
+    : "radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.06) 0%, transparent 40%), radial-gradient(circle at 85% 80%, rgba(6, 182, 212, 0.04) 0%, transparent 40%)";
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (loading) return;
-
     setLoading(true);
     setError("");
-
     try {
       const response = await api.post("/auth/login", {
-        email,
+        email: email.trim(),
         password,
       });
-
-      console.log(response.data);
-
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
-
-      const role = response.data.user.role;
-
-      if (role === "admin") {
-        navigate("/admin/dashboard");
-      } else if (role === "teacher") {
-        navigate("/teacher/dashboard");
-      } else if (role === "student") {
-        navigate("/student/courses");
-      } else {
-        setError("Unknown user role. Please contact support.");
-        setLoading(false);
-      }
+      const { token, user } = response.data;
+      if (!token || !user) throw new Error("Invalid response received from authentication service.");
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      const role = user.role;
+      if (role === "admin") navigate("/admin/dashboard");
+      else if (role === "teacher") navigate("/teacher/dashboard");
+      else navigate("/student/dashboard");
     } catch (err) {
-      console.log(err);
+      console.error("Login failure:", err);
       setError(
-        err.response?.data?.message ||
-          "Login failed. Please check your credentials."
+        err.response?.data?.message || err.message || "Authentication failed. Please verify your credentials."
       );
+    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <ThemeProvider theme={theme}>
-      <Box
-        sx={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          py: { xs: 0, sm: 4 },
-          px: { xs: 0, sm: 2 },
-          background: (t) =>
-            `linear-gradient(135deg, ${alpha(
-              t.palette.primary.main,
-              0.1
-            )} 0%, ${t.palette.background.default} 55%)`,
-        }}
-      >
-        <Container
-          maxWidth="lg"
-          disableGutters
-          sx={{ maxWidth: { sm: 1000 } }}
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        bgcolor: isDark ? "#030712" : "#f8fafc",
+        backgroundImage: pageGradient,
+        p: { xs: 2, sm: 4 },
+      }}
+    >
+      <Container maxWidth="lg" sx={{ maxWidth: { sm: 1060 } }}>
+        <GlassCard
+          sx={{
+            display: "flex",
+            flexDirection: { xs: "column", md: "row" },
+            overflow: "hidden",
+            boxShadow: isDark
+              ? "0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 40px rgba(99, 102, 241, 0.1)"
+              : "0 25px 60px -15px rgba(0, 0, 0, 0.12), 0 0 40px rgba(99, 102, 241, 0.06)",
+            border: `1px solid ${borderColor}`,
+          }}
         >
-          <Paper
-            elevation={0}
+          {/* ── Left Brand Showcase Panel ── */}
+          <Box
             sx={{
+              flex: 1.1,
+              p: { xs: 3.5, sm: 5, md: 6 },
+              bgcolor: panelBg,
+              borderRight: { md: `1px solid ${dividerColor}` },
+              borderBottom: { xs: `1px solid ${dividerColor}`, md: "none" },
               display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              overflow: "hidden",
-              minHeight: { xs: "100vh", sm: "auto", md: 600 },
-              borderRadius: { xs: 0, sm: 4 },
-              border: { xs: "none", sm: "1px solid" },
-              borderColor: "divider",
-              boxShadow: {
-                xs: "none",
-                sm: "0 24px 60px rgba(15, 23, 42, 0.12)",
-              },
+              flexDirection: "column",
+              justifyContent: "space-between",
             }}
           >
-            {/* Brand panel */}
-            <Box
-              sx={{
-                position: "relative",
-                overflow: "hidden",
-                flex: { md: "0 0 42%" },
-                color: "primary.contrastText",
-                p: { xs: 3, sm: 4, md: 5 },
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-                gap: 4,
-                background: (t) =>
-                  `linear-gradient(155deg, ${t.palette.primary.main} 0%, ${t.palette.primary.dark} 100%)`,
-              }}
-            >
-              <Box
-                sx={{
-                  position: "absolute",
-                  width: 280,
-                  height: 280,
-                  borderRadius: "50%",
-                  top: -90,
-                  right: -90,
-                  bgcolor: "rgba(255,255,255,0.08)",
-                }}
-              />
-              <Box
-                sx={{
-                  position: "absolute",
-                  width: 200,
-                  height: 200,
-                  borderRadius: "50%",
-                  bottom: -70,
-                  left: -60,
-                  bgcolor: "rgba(255,255,255,0.06)",
-                  display: { xs: "none", md: "block" },
-                }}
-              />
-
-              <Stack
-                direction="row"
-                alignItems="center"
-                spacing={1.5}
-                sx={{ position: "relative" }}
-              >
-                <Avatar
-                  variant="rounded"
+            <Box>
+              {/* Academy Logo */}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.75, mb: 4 }}>
+                <Box
                   sx={{
-                    width: 42,
-                    height: 42,
-                    bgcolor: "rgba(255,255,255,0.2)",
-                    color: "inherit",
-                    fontWeight: 800,
-                    borderRadius: 2,
+                    width: 44,
+                    height: 44,
+                    borderRadius: "12px",
+                    bgcolor: "rgba(99, 102, 241, 0.18)",
+                    border: "1px solid rgba(99, 102, 241, 0.4)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#818cf8",
+                    boxShadow: "0 0 20px rgba(99, 102, 241, 0.3)",
                   }}
                 >
-                  S
-                </Avatar>
-                <Typography variant="h6" fontWeight={700} letterSpacing={0.3}>
-                  Student Portal
-                </Typography>
-              </Stack>
-
-              <Box sx={{ position: "relative" }}>
-                <Typography
-                  variant="h4"
-                  fontWeight={800}
-                  gutterBottom
-                  sx={{
-                    fontSize: { xs: "1.6rem", md: "2.1rem" },
-                    lineHeight: 1.2,
-                  }}
-                >
-                  Welcome back
-                </Typography>
-                <Typography sx={{ opacity: 0.85, maxWidth: 380 }}>
-                  Sign in to continue to your dashboard and pick up where you
-                  left off.
-                </Typography>
+                  <SchoolIcon sx={{ fontSize: 26 }} />
+                </Box>
+                <Box>
+                  <Typography variant="h5" sx={{ fontWeight: 800, color: textPrimary, lineHeight: 1.1, letterSpacing: "-0.02em" }}>
+                    Extreme Institute
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: "#818cf8", fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                    Of Knowledge • EIK Cloud
+                  </Typography>
+                </Box>
               </Box>
 
-              <Stack
-                spacing={2}
+              <Chip
+                label="ENTERPRISE ACADEMIC PLATFORM"
+                size="small"
                 sx={{
-                  position: "relative",
-                  display: { xs: "none", md: "flex" },
+                  bgcolor: "rgba(99, 102, 241, 0.12)",
+                  color: "#818cf8",
+                  border: "1px solid rgba(99, 102, 241, 0.3)",
+                  fontWeight: 700,
+                  fontSize: "0.68rem",
+                  letterSpacing: "0.06em",
+                  mb: 2.5,
                 }}
-              >
-                {HIGHLIGHTS.map((item) => (
-                  <Stack
-                    key={item.title}
-                    direction="row"
-                    spacing={1.75}
-                    alignItems="flex-start"
-                  >
-                    <Box
-                      sx={{
-                        width: 26,
-                        height: 26,
-                        flexShrink: 0,
-                        mt: "2px",
-                        borderRadius: "50%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        bgcolor: "rgba(255,255,255,0.2)",
-                        fontSize: 14,
-                        fontWeight: 700,
-                      }}
-                    >
-                      ✓
-                    </Box>
-                    <Box>
-                      <Typography variant="subtitle2" fontWeight={700}>
-                        {item.title}
-                      </Typography>
-                      <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                        {item.text}
-                      </Typography>
-                    </Box>
-                  </Stack>
+              />
+
+              <Typography variant="h4" sx={{ fontWeight: 800, color: textPrimary, lineHeight: 1.25, mb: 2, letterSpacing: "-0.02em" }}>
+                Intelligent Institutional Workspace.
+              </Typography>
+
+              <Typography variant="body2" sx={{ color: textSecondary, mb: 4, lineHeight: 1.6 }}>
+                Unified administration, automated student messaging, and intelligent AI assessment
+                management built for elite educational academies.
+              </Typography>
+
+              <Stack spacing={2} sx={{ mb: 4 }}>
+                {HIGHLIGHTS.map((item, index) => (
+                  <Box key={index} sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <CheckCircleOutlineIcon sx={{ color: "#10b981", fontSize: 20, flexShrink: 0 }} />
+                    <Typography variant="body2" sx={{ color: isDark ? "#cbd5e1" : "#334155", fontSize: "0.85rem" }}>
+                      {item}
+                    </Typography>
+                  </Box>
                 ))}
               </Stack>
             </Box>
 
-            {/* Form panel */}
-            <Box
-              sx={{
-                flex: 1,
-                bgcolor: "background.paper",
-                p: { xs: 3, sm: 5, md: 6 },
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-              }}
-            >
-              <Typography
-                variant="h4"
-                fontWeight={800}
-                sx={{ fontSize: { xs: "1.5rem", sm: "1.9rem" } }}
-              >
-                Sign in
+            <Box sx={{ pt: 2, borderTop: `1px solid ${dividerColor}` }}>
+              <Typography variant="caption" sx={{ color: textMuted }}>
+                Protected by 256-bit SSL • MongoDB Distributed Cluster
               </Typography>
-              <Typography color="text.secondary" sx={{ mt: 0.75, mb: 3.5 }}>
-                Enter your email and password to access your account.
-              </Typography>
-
-              {error && (
-                <Alert
-                  severity="error"
-                  variant="outlined"
-                  sx={{ mb: 3, borderRadius: 2 }}
-                >
-                  {error}
-                </Alert>
-              )}
-
-              <Box
-                component="form"
-                onSubmit={handleSubmit}
-                sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}
-              >
-                <TextField
-                  label="Email Address"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
-                  fullWidth
-                  required
-                  sx={inputSx}
-                />
-
-                <TextField
-                  label="Password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                  fullWidth
-                  required
-                  sx={inputSx}
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <Button
-                          size="small"
-                          onClick={() => setShowPassword((prev) => !prev)}
-                          sx={{
-                            textTransform: "none",
-                            minWidth: 0,
-                            fontWeight: 600,
-                          }}
-                        >
-                          {showPassword ? "Hide" : "Show"}
-                        </Button>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
-                <Button
-                  type="submit"
-                  variant="contained"
-                  size="large"
-                  fullWidth
-                  disabled={loading}
-                  sx={{
-                    mt: 1,
-                    py: 1.5,
-                    borderRadius: 2,
-                    textTransform: "none",
-                    fontWeight: 700,
-                    fontSize: "1rem",
-                    boxShadow: (t) =>
-                      `0 8px 20px ${alpha(t.palette.primary.main, 0.35)}`,
-                    "&:hover": {
-                      boxShadow: (t) =>
-                        `0 10px 24px ${alpha(t.palette.primary.main, 0.45)}`,
-                    },
-                  }}
-                >
-                  {loading ? (
-                    <CircularProgress size={24} color="inherit" />
-                  ) : (
-                    "Login"
-                  )}
-                </Button>
-
-                <Typography
-                  variant="body2"
-                  textAlign="center"
-                  color="text.secondary"
-                  sx={{ mt: 0.5 }}
-                >
-                  Don&apos;t have an account?{" "}
-                  <Link
-                    component={RouterLink}
-                    to="/register"
-                    underline="hover"
-                    fontWeight={700}
-                  >
-                    Register
-                  </Link>
-                </Typography>
-              </Box>
             </Box>
-          </Paper>
-        </Container>
-      </Box>
-    </ThemeProvider>
+          </Box>
+
+          {/* ── Right Form Panel ── */}
+          <Box
+            sx={{
+              flex: 1,
+              p: { xs: 3.5, sm: 5, md: 6 },
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              bgcolor: formBg,
+            }}
+          >
+            <Box sx={{ mb: 3.5 }}>
+              <Typography variant="h5" sx={{ fontWeight: 800, color: textPrimary, mb: 0.5 }}>
+                Sign into Workspace
+              </Typography>
+              <Typography variant="body2" sx={{ color: textSecondary }}>
+                Enter your institutional credentials to access your console.
+              </Typography>
+            </Box>
+
+            {error && (
+              <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError("")}>
+                {error}
+              </Alert>
+            )}
+
+            <Box component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+              <TextField
+                label="Email Address"
+                type="email"
+                required
+                fullWidth
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@eik.edu"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EmailOutlinedIcon sx={{ color: textMuted, fontSize: 20 }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+
+              <TextField
+                label="Password"
+                type={showPassword ? "text" : "password"}
+                required
+                fullWidth
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LockOutlinedIcon sx={{ color: textMuted, fontSize: 20 }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowPassword(!showPassword)} edge="end" size="small" sx={{ color: textMuted }}>
+                        {showPassword ? <VisibilityOffOutlinedIcon fontSize="small" /> : <VisibilityOutlinedIcon fontSize="small" />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+
+              <Button
+                type="submit"
+                variant="contained"
+                size="large"
+                fullWidth
+                disabled={loading}
+                endIcon={!loading && <ArrowForwardIcon />}
+                sx={{ py: 1.4, fontWeight: 700, fontSize: "0.95rem", bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+              >
+                {loading ? <CircularProgress size={24} sx={{ color: "#ffffff" }} /> : "Access Account"}
+              </Button>
+            </Box>
+
+            <Box sx={{ mt: 4, textAlign: "center" }}>
+              <Typography variant="body2" sx={{ color: textSecondary }}>
+                New student joining the academy?{" "}
+                <Link
+                  component={RouterLink}
+                  to="/register"
+                  sx={{ color: "#818cf8", fontWeight: 700, textDecoration: "none", "&:hover": { textDecoration: "underline" } }}
+                >
+                  Create Student Account
+                </Link>
+              </Typography>
+            </Box>
+          </Box>
+        </GlassCard>
+      </Container>
+    </Box>
   );
 }
-
-export default Login;

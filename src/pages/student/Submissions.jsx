@@ -1,38 +1,38 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
-  Avatar,
   Box,
   Button,
-  Card,
-  CardContent,
-  Chip,
-  CircularProgress,
-  Container,
-  InputAdornment,
-  MenuItem,
-  Stack,
+  Grid,
   TextField,
+  InputAdornment,
   Typography,
-  useTheme,
+  Chip,
+  IconButton,
+  Tooltip,
+  Skeleton,
+  Link,
 } from "@mui/material";
 
-import AssignmentOutlined from "@mui/icons-material/AssignmentOutlined";
-import CheckCircleOutlined from "@mui/icons-material/CheckCircleOutlined";
-import OpenInNew from "@mui/icons-material/OpenInNew";
-import PendingActionsOutlined from "@mui/icons-material/PendingActionsOutlined";
-import Refresh from "@mui/icons-material/Refresh";
-import Search from "@mui/icons-material/Search";
-import UploadFileOutlined from "@mui/icons-material/UploadFileOutlined";
+import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
+import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
+import PendingActionsOutlinedIcon from "@mui/icons-material/PendingActionsOutlined";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import SearchIcon from "@mui/icons-material/Search";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import StarOutlineIcon from "@mui/icons-material/StarOutlined";
 
-import StudentLayout from "../components/student/StudentLayout";
+import Layout from "../../components/layout/Layout";
+import GlassCard from "../../components/common/GlassCard";
+import StatCard from "../../components/common/StatCard";
+import StatusBadge from "../../components/common/StatusBadge";
 import api from "../../servises/api";
 
 const formatDate = (date) => {
   if (!date) return "N/A";
   const parsedDate = new Date(date);
   if (Number.isNaN(parsedDate.getTime())) return "N/A";
-  return parsedDate.toLocaleDateString("en-GB", {
+  return parsedDate.toLocaleDateString(undefined, {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -40,8 +40,6 @@ const formatDate = (date) => {
 };
 
 export default function Submissions() {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -57,23 +55,19 @@ export default function Submissions() {
       const studentId = user?.id || user?._id;
 
       if (!studentId) {
-        setError("Student information was not found. Please log in again.");
+        setError("Student identity not found. Please log in again.");
         setSubmissions([]);
         return;
       }
 
       const response = await api.get(`/student/submissions/${studentId}`);
-
       setSubmissions(
-        Array.isArray(response.data?.submissions)
-          ? response.data.submissions
-          : []
+        Array.isArray(response.data?.submissions) ? response.data.submissions : []
       );
     } catch (err) {
       console.error("Fetch student submissions error:", err);
       setError(
-        err.response?.data?.message ||
-          "Unable to load your submissions. Please try again."
+        err.response?.data?.message || "Unable to load submissions history. Please try again."
       );
     } finally {
       setLoading(false);
@@ -110,406 +104,251 @@ export default function Submissions() {
   const pendingCount = totalCount - reviewedCount;
 
   return (
-    <StudentLayout>
-      <Box sx={{ minHeight: "100%", bgcolor: "transparent" }}>
-        <Container maxWidth="xl" disableGutters>
-          
-          {/* Page Heading & Refresh Action */}
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={2}
-            sx={{
-              justifyContent: "space-between",
-              alignItems: { xs: "stretch", sm: "center" },
-              mb: { xs: 3, md: 4 },
-            }}
-          >
-            <Box>
-              <Typography
-                variant="h4"
-                sx={{
-                  fontWeight: 800,
-                  color: isDark ? "text.primary" : "#0f172a",
-                  letterSpacing: "-0.5px",
-                  fontSize: { xs: "1.5rem", sm: "1.8rem", md: "2.2rem" },
-                }}
-              >
-                Track your work
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                Track your assignment progress, grades, and teacher reviews.
-              </Typography>
-            </Box>
-
-            <Button
-              variant="outlined"
-              startIcon={<Refresh />}
-              onClick={fetchSubmissions}
-              sx={{
-                textTransform: "none",
-                borderRadius: 2.5,
-                fontWeight: 600,
-                borderColor: "#cbd5e1",
-                color: isDark ? "text.primary" : "#334155",
-                bgcolor: isDark ? "background.paper" : "#ffffff",
-                py: { xs: 1, sm: 0.75 },
-                "&:hover": {
-                  bgcolor: isDark ? "#263650" : "#f1f5f9",
-                  borderColor: "#94a3b8",
-                },
-              }}
-            >
-              Refresh Submissions
-            </Button>
-          </Stack>
-
-          {error && (
-            <Alert
-              severity="error"
-              sx={{ mb: 3, borderRadius: 3 }}
-              action={
-                <Button color="inherit" size="small" onClick={fetchSubmissions}>
-                  Retry
-                </Button>
-              }
-            >
-              {error}
-            </Alert>
-          )}
-
-          {/* Statistics Cards Grid */}
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                sm: "repeat(2, minmax(0, 1fr))",
-                md: "repeat(3, minmax(0, 1fr))",
-              },
-              gap: { xs: 2, md: 2.5 },
-              mb: { xs: 3, md: 4 },
-            }}
-          >
-            <StatCard
-              icon={<AssignmentOutlined />}
-              iconBg="#eff6ff"
-              iconColor="#2563eb"
-              title="Total Submissions"
-              value={totalCount}
-            />
-            <StatCard
-              icon={<CheckCircleOutlined />}
-              iconBg="#f0fdf4"
-              iconColor="#16a34a"
-              title="Reviewed"
-              value={reviewedCount}
-              valueColor="#16a34a"
-            />
-            <StatCard
-              icon={<PendingActionsOutlined />}
-              iconBg="#fffbeb"
-              iconColor="#d97706"
-              title="Pending Review"
-              value={pendingCount}
-              valueColor="#d97706"
-            />
-          </Box>
-
-          {/* Search and Filters Toolbar */}
-          <Card
-            elevation={0}
-            sx={{
-              borderRadius: 3,
-              mb: 3,
-              border: "1px solid #e2e8f0",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.02)",
-            }}
-          >
-            <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  placeholder="Search by assignment title..."
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  slotProps={{
-                    input: {
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Search sx={{ color: "text.secondary" }} />
-                        </InputAdornment>
-                      ),
-                      sx: { borderRadius: 2 },
-                    },
-                  }}
-                />
-
-                <TextField
-                  select
-                  size="small"
-                  label="Filter Status"
-                  value={statusFilter}
-                  onChange={(event) => setStatusFilter(event.target.value)}
-                  sx={{
-                    minWidth: { xs: "100%", sm: 200 },
-                    "& .MuiOutlinedInput-root": { borderRadius: 2 },
-                  }}
-                >
-                  <MenuItem value="All">All Submissions</MenuItem>
-                  <MenuItem value="Pending">Pending Review</MenuItem>
-                  <MenuItem value="Reviewed">Reviewed</MenuItem>
-                </TextField>
-              </Stack>
-            </CardContent>
-          </Card>
-
-          {/* Submission List / Loading / Empty States */}
-          {loading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
-              <CircularProgress />
-            </Box>
-          ) : filteredSubmissions.length === 0 ? (
-            <Card
-              elevation={0}
-              sx={{
-                borderRadius: 3,
-                textAlign: "center",
-                py: { xs: 6, sm: 8 },
-                px: 2,
-                border: "1px solid #e2e8f0",
-                bgcolor: isDark ? "background.paper" : "#ffffff",
-              }}
-            >
-              <UploadFileOutlined sx={{ fontSize: 56, color: "#94a3b8", mb: 1.5 }} />
-
-              <Typography variant="h6" fontWeight={700} color={isDark ? "text.primary" : "#0f172a"}>
-                {submissions.length === 0
-                  ? "No submissions yet"
-                  : "No matching submissions"}
-              </Typography>
-
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 400, mx: "auto" }}>
-                {submissions.length === 0
-                  ? "Your submitted assignments will appear here once you upload your work."
-                  : "Try adjusting your search query or status filter options."}
-              </Typography>
-
-              {(search || statusFilter !== "All") && (
-                <Button
-                  variant="outlined"
-                  size="small"
-                  sx={{ mt: 2.5, textTransform: "none", borderRadius: 2 }}
-                  onClick={() => {
-                    setSearch("");
-                    setStatusFilter("All");
-                  }}
-                >
-                  Clear Filters
-                </Button>
-              )}
-            </Card>
-          ) : (
-            <Stack spacing={2}>
-              {filteredSubmissions.map((submission) => {
-                const status = getStatus(submission);
-                const assignment = submission.assignment;
-                const title = assignment?.title || "Untitled Assignment";
-                const submissionUrl = submission.submissionURL;
-
-                return (
-                  <Card
-                    elevation={0}
-                    key={submission._id}
-                    sx={{
-                      borderRadius: 3,
-                      border: "1px solid",
-                      borderColor: "#e2e8f0",
-                      boxShadow: "0 4px 12px rgba(15, 23, 42, 0.02)",
-                      transition: "all 0.2s ease-in-out",
-                      bgcolor: isDark ? "background.paper" : "#ffffff",
-                      "&:hover": {
-                        boxShadow: "0 8px 24px rgba(15, 23, 42, 0.06)",
-                        borderColor: "#cbd5e1",
-                      },
-                    }}
-                  >
-                    <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
-                      <Stack
-                        direction={{ xs: "column", md: "row" }}
-                        spacing={3}
-                        sx={{
-                          justifyContent: "space-between",
-                          alignItems: { xs: "stretch", md: "center" },
-                        }}
-                      >
-                        {/* Left Info Section */}
-                        <Stack
-                          direction="row"
-                          spacing={2}
-                          sx={{ minWidth: 0, flex: 1, alignItems: "flex-start" }}
-                        >
-                          <Avatar
-                            variant="rounded"
-                            sx={{
-                              bgcolor: "#eff6ff",
-                              color: "#2563eb",
-                              width: { xs: 44, sm: 50 },
-                              height: { xs: 44, sm: 50 },
-                              borderRadius: 2.5,
-                              flexShrink: 0,
-                            }}
-                          >
-                            <AssignmentOutlined />
-                          </Avatar>
-
-                          <Box sx={{ minWidth: 0, flex: 1 }}>
-                            <Typography
-                              variant="h6"
-                              fontWeight={750}
-                              color="#0f172a"
-                              sx={{
-                                overflowWrap: "anywhere",
-                                fontSize: { xs: "0.95rem", sm: "1.05rem" },
-                                lineHeight: 1.4,
-                              }}
-                            >
-                              {title}
-                            </Typography>
-
-                            <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ display: "block", mt: 0.5 }}>
-                              Submitted on {formatDate(submission.createdAt)}
-                            </Typography>
-
-                            {assignment?.description && (
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                sx={{
-                                  mt: 1,
-                                  display: "-webkit-box",
-                                  WebkitLineClamp: 2,
-                                  WebkitBoxOrient: "vertical",
-                                  overflow: "hidden",
-                                  fontSize: "0.875rem",
-                                }}
-                              >
-                                {assignment.description}
-                              </Typography>
-                            )}
-                          </Box>
-                        </Stack>
-
-                        {/* Right Actions & Status Section */}
-                        <Stack
-                          direction={{ xs: "row", sm: "row" }}
-                          spacing={{ xs: 1.5, sm: 2.5 }}
-                          sx={{
-                            alignItems: "center",
-                            justifyContent: { xs: "space-between", md: "flex-end" },
-                            pt: { xs: 1.5, md: 0 },
-                            borderTop: { xs: "1px solid #f1f5f9", md: "none" },
-                            flexWrap: "wrap",
-                            gap: 1,
-                          }}
-                        >
-                          <Box sx={{ textAlign: { xs: "left", md: "right" } }}>
-                            <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ display: "block" }}>
-                              Grade / Marks
-                            </Typography>
-                            <Typography fontWeight={800} color="#0f172a" sx={{ fontSize: "0.95rem" }}>
-                              {status === "Reviewed"
-                                ? `${submission.marks ?? 0} marks`
-                                : "Not graded"}
-                            </Typography>
-                          </Box>
-
-                          <Chip
-                            icon={
-                              status === "Reviewed" ? (
-                                <CheckCircleOutlined fontSize="small" />
-                              ) : (
-                                <PendingActionsOutlined fontSize="small" />
-                              )
-                            }
-                            label={status}
-                            color={status === "Reviewed" ? "success" : "warning"}
-                            variant="outlined"
-                            sx={{ fontWeight: 700, borderRadius: 2, height: 32 }}
-                          />
-
-                          {submissionUrl && (
-                            <Button
-                              component="a"
-                              href={submissionUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              variant="contained"
-                              endIcon={<OpenInNew />}
-                              sx={{
-                                textTransform: "none",
-                                borderRadius: 2.5,
-                                fontWeight: 600,
-                                bgcolor: "#2563eb",
-                                boxShadow: "none",
-                                py: 0.75,
-                                px: 2,
-                                "&:hover": {
-                                  bgcolor: "#1d4ed8",
-                                  boxShadow: "0 4px 12px rgba(37, 99, 235, 0.2)",
-                                },
-                              }}
-                            >
-                              View Work
-                            </Button>
-                          )}
-                        </Stack>
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </Stack>
-          )}
-        </Container>
-      </Box>
-    </StudentLayout>
-  );
-}
-
-// Reusable Stat Card Component
-function StatCard({ icon, iconBg, iconColor, title, value, valueColor = "#0f172a" }) {
-  return (
-    <Card
-      elevation={0}
-      sx={{
-        borderRadius: 3,
-        border: "1px solid #e2e8f0",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.02)",
-      }}
-    >
-      <CardContent sx={{ display: "flex", gap: 2, alignItems: "center", p: { xs: 2, sm: 2.5 } }}>
-        <Avatar
+    <Layout>
+      <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 3.5 }}>
+        {/* Header */}
+        <Box
           sx={{
-            bgcolor: iconBg,
-            color: iconColor,
-            width: { xs: 44, sm: 50 },
-            height: { xs: 44, sm: 50 },
-            borderRadius: 2.5,
-            flexShrink: 0,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: { xs: "flex-start", sm: "center" },
+            flexDirection: { xs: "column", sm: "row" },
+            gap: 2,
           }}
         >
-          {icon}
-        </Avatar>
-        <Box sx={{ minWidth: 0 }}>
-          <Typography color="text.secondary" variant="body2" fontWeight={500} noWrap>
-            {title}
-          </Typography>
-          <Typography variant="h5" fontWeight={800} color={valueColor} sx={{ mt: 0.2, fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
-            {value}
-          </Typography>
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 800 }}>
+              Submission History & Grades
+            </Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5 }}>
+              Track completed coursework, faculty assessment reviews, and scores.
+            </Typography>
+          </Box>
+
+          <Tooltip title="Refresh">
+            <IconButton
+              onClick={fetchSubmissions}
+              disabled={loading}
+              sx={{
+                border: "1px solid rgba(255, 255, 255, 0.12)",
+                borderRadius: "8px",
+                p: 1,
+              }}
+            >
+              <RefreshIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </Box>
-      </CardContent>
-    </Card>
+
+        {error && (
+          <Alert severity="error" onClose={() => setError("")}>
+            {error}
+          </Alert>
+        )}
+
+        {/* Metric Cards */}
+        <Grid container spacing={2.5}>
+          <Grid item xs={12} sm={4}>
+            <StatCard
+              title="Total Submitted"
+              value={totalCount}
+              icon={AssignmentOutlinedIcon}
+              color="#6366f1"
+              loading={loading}
+            />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <StatCard
+              title="Evaluated & Graded"
+              value={reviewedCount}
+              icon={CheckCircleOutlinedIcon}
+              color="#10b981"
+              loading={loading}
+            />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <StatCard
+              title="In Faculty Review"
+              value={pendingCount}
+              icon={PendingActionsOutlinedIcon}
+              color="#f59e0b"
+              loading={loading}
+            />
+          </Grid>
+        </Grid>
+
+        {/* Toolbar */}
+        <GlassCard sx={{ p: 2.5 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 2,
+            }}
+          >
+            <Box sx={{ display: "flex", gap: 1 }}>
+              {["All", "Pending", "Reviewed"].map((status) => (
+                <Button
+                  key={status}
+                  size="small"
+                  variant={statusFilter === status ? "contained" : "outlined"}
+                  onClick={() => setStatusFilter(status)}
+                  sx={{
+                    borderRadius: "6px",
+                    px: 2,
+                    fontSize: "0.8rem",
+                    ...(statusFilter !== status && {
+                      borderColor: "rgba(255, 255, 255, 0.1)",
+                      color: "text.secondary",
+                    }),
+                  }}
+                >
+                  {status}
+                </Button>
+              ))}
+            </Box>
+
+            <TextField
+              size="small"
+              placeholder="Search by assignment title..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: "text.secondary", fontSize: 18 }} />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ width: { xs: "100%", sm: 320 } }}
+            />
+          </Box>
+        </GlassCard>
+
+        {/* Submissions List */}
+        {loading ? (
+          <Grid container spacing={2.5}>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Grid item xs={12} key={i}>
+                <GlassCard sx={{ p: 3 }}>
+                  <Skeleton width="40%" height={28} sx={{ mb: 1 }} />
+                  <Skeleton width="60%" height={20} sx={{ mb: 2 }} />
+                  <Skeleton height={36} width="80%" />
+                </GlassCard>
+              </Grid>
+            ))}
+          </Grid>
+        ) : filteredSubmissions.length === 0 ? (
+          <GlassCard
+            sx={{
+              textAlign: "center",
+              py: 8,
+              px: 3,
+              border: "1px dashed rgba(255, 255, 255, 0.15)",
+            }}
+          >
+            <AssignmentOutlinedIcon sx={{ fontSize: 50, color: "text.secondary", mb: 1.5 }} />
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              No submissions recorded
+            </Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5 }}>
+              Deliver solutions from the Coursework tab to generate graded evaluation records.
+            </Typography>
+          </GlassCard>
+        ) : (
+          <Grid container spacing={2.5}>
+            {filteredSubmissions.map((submission) => {
+              const assignment = submission.assignment || {};
+              const isReviewed = getStatus(submission) === "Reviewed";
+
+              return (
+                <Grid item xs={12} key={submission._id}>
+                  <GlassCard sx={{ p: 3 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: { xs: "flex-start", sm: "center" },
+                        flexDirection: { xs: "column", sm: "row" },
+                        gap: 1.5,
+                        mb: 2,
+                      }}
+                    >
+                      <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
+                          {assignment.title || "Course Assignment"}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                          Delivered: {formatDate(submission.createdAt || submission.submissionDate)}
+                        </Typography>
+                      </Box>
+
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                        {isReviewed && submission.marks !== undefined && (
+                          <Chip
+                            icon={<StarOutlineIcon sx={{ fontSize: 16 }} />}
+                            label={`Score: ${submission.marks}/100`}
+                            color="success"
+                            size="small"
+                            sx={{ fontWeight: 800 }}
+                          />
+                        )}
+                        <StatusBadge
+                          status={isReviewed ? "active" : "pending"}
+                          label={isReviewed ? "REVIEWED & GRADED" : "UNDER REVIEW"}
+                        />
+                      </Box>
+                    </Box>
+
+                    {/* Submission URL link */}
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mb: 0.5 }}>
+                        Artifact Solution Link:
+                      </Typography>
+                      <Link
+                        href={submission.submissionURL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{
+                          color: "#818cf8",
+                          fontWeight: 600,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                          fontSize: "0.875rem",
+                        }}
+                      >
+                        {submission.submissionURL} <OpenInNewIcon sx={{ fontSize: 14 }} />
+                      </Link>
+                    </Box>
+
+                    {/* Instructor Feedback */}
+                    {submission.feedback && (
+                      <Box
+                        sx={{
+                          p: 2,
+                          borderRadius: "10px",
+                          bgcolor: "rgba(99, 102, 241, 0.06)",
+                          border: "1px solid rgba(99, 102, 241, 0.2)",
+                        }}
+                      >
+                        <Typography variant="caption" sx={{ color: "#818cf8", fontWeight: 700, display: "block", mb: 0.5 }}>
+                          Faculty Feedback:
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: "text.primary", lineHeight: 1.6 }}>
+                          "{submission.feedback}"
+                        </Typography>
+                      </Box>
+                    )}
+                  </GlassCard>
+                </Grid>
+              );
+            })}
+          </Grid>
+        )}
+      </Box>
+    </Layout>
   );
 }

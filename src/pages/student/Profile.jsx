@@ -1,5 +1,24 @@
-import { Alert, Avatar, Box, Card, CardContent, Container, Grid, Paper, Typography, useTheme } from "@mui/material";
-import StudentLayout from "../components/student/StudentLayout";
+import React from "react";
+import {
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  Grid,
+  Typography,
+  Chip,
+  Divider,
+} from "@mui/material";
+import SchoolIcon from "@mui/icons-material/School";
+import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
+import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
+import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
+import LogoutIcon from "@mui/icons-material/Logout";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { useNavigate } from "react-router-dom";
+
+import Layout from "../../components/layout/Layout";
+import GlassCard from "../../components/common/GlassCard";
 
 function readUser() {
   try {
@@ -9,10 +28,16 @@ function readUser() {
   }
 }
 
-function StudentProfile() {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
+export default function StudentProfile() {
+  const navigate = useNavigate();
   const user = readUser();
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
   const initials = user?.name
     ? user.name
         .trim()
@@ -24,134 +49,140 @@ function StudentProfile() {
     : "S";
 
   const details = [
-    { label: "Full name", value: user?.name || "Not available" },
-    { label: "Email address", value: user?.email || "Not available" },
-    { label: "Account role", value: user?.role || "Student" },
-    { label: "Student ID", value: user?.id || user?._id || "Not available" },
+    { label: "Student Full Name", value: user?.name || "Student Candidate", icon: PersonOutlinedIcon },
+    { label: "Institutional Email", value: user?.email || "student@eik.edu", icon: EmailOutlinedIcon },
+    { label: "Account Role", value: (user?.role || "Student").toUpperCase(), icon: SchoolIcon },
+    { label: "Registration ID", value: user?.id || user?._id || "EIK-STU-2026", icon: BadgeOutlinedIcon },
   ];
 
   return (
-    <StudentLayout>
-      <Container maxWidth="md" disableGutters>
+    <Layout>
+      <Box sx={{ width: "100%", maxWidth: 900, mx: "auto", display: "flex", flexDirection: "column", gap: 3.5 }}>
+        {/* Header */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate("/student/dashboard")}
+          >
+            Dashboard
+          </Button>
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 800 }}>
+              Student Profile
+            </Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
+              Academic credentials, account identification, and student status.
+            </Typography>
+          </Box>
+        </Box>
+
         {!user ? (
-          <Alert severity="warning" sx={{ borderRadius: 2.5 }}>
-            Your account information is not available. Please log in again.
+          <Alert severity="warning">
+            Your account session has expired. Please sign in again.
           </Alert>
         ) : (
-          <Card
-            elevation={0}
-            sx={{
-              overflow: "hidden",
-              border: "1px solid #e5eaf2",
-              borderRadius: { xs: 3, sm: 4 },
-              boxShadow: "0 8px 28px rgba(15, 23, 42, 0.045)",
-            }}
-          >
+          <GlassCard sx={{ p: 0, overflow: "hidden" }}>
+            {/* Banner Gradient */}
             <Box
               sx={{
-                height: { xs: 104, sm: 144 },
-                background:
-                  "linear-gradient(120deg, #172554 0%, #1d4ed8 58%, #60a5fa 100%)",
+                height: 140,
+                background: "linear-gradient(135deg, rgba(99, 102, 241, 0.4) 0%, rgba(6, 182, 212, 0.25) 100%)",
+                borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
               }}
             />
-            <CardContent sx={{ px: { xs: 2, sm: 3.5 }, pb: { xs: 2.5, sm: 3.5 } }}>
+
+            <Box sx={{ px: { xs: 3, sm: 4 }, pb: 4, pt: 0 }}>
+              {/* Avatar & Title Row */}
               <Box
                 sx={{
                   display: "flex",
                   flexDirection: { xs: "column", sm: "row" },
                   alignItems: { xs: "center", sm: "flex-end" },
-                  gap: 2,
-                  mt: { xs: -6, sm: -7 },
-                  mb: 3.5,
+                  gap: 2.5,
+                  mt: -6,
+                  mb: 3,
                   textAlign: { xs: "center", sm: "left" },
                 }}
               >
                 <Avatar
                   sx={{
-                    width: { xs: 88, sm: 104 },
-                    height: { xs: 88, sm: 104 },
-                    bgcolor: "#eff6ff",
-                    color: "#1d4ed8",
-                    fontSize: { xs: 30, sm: 36 },
+                    width: 96,
+                    height: 96,
+                    bgcolor: "#6366f1",
+                    color: "#ffffff",
+                    fontSize: "2.2rem",
                     fontWeight: 800,
-                    border: "4px solid #fff",
-                    boxShadow: "0 6px 20px rgba(15, 23, 42, 0.12)",
+                    border: "4px solid #0b0f19",
+                    boxShadow: "0 0 30px rgba(99, 102, 241, 0.4)",
                   }}
                 >
                   {initials}
                 </Avatar>
-                <Box sx={{ minWidth: 0, pb: { sm: 0.75 } }}>
-                  <Typography
-                    component="h2"
-                    sx={{
-                      color: isDark ? "text.primary" : "#172033",
-                      fontSize: { xs: "1.35rem", sm: "1.65rem" },
-                      fontWeight: 800,
-                      overflowWrap: "anywhere",
-                    }}
-                  >
+
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 800 }}>
                     {user.name || "Student"}
                   </Typography>
-                  <Typography color="text.secondary" sx={{ overflowWrap: "anywhere" }}>
-                    {user.email || "No email provided"}
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                    Extreme Institute of Knowledge • Active Scholar
                   </Typography>
                 </Box>
+
+                <Chip
+                  label="VERIFIED STUDENT"
+                  color="success"
+                  size="small"
+                  sx={{ fontWeight: 700, fontSize: "0.72rem" }}
+                />
               </Box>
 
-              <Typography
-                component="h3"
-                sx={{ mb: 1.75, color: isDark ? "text.primary" : "#172033", fontSize: "1rem", fontWeight: 750 }}
-              >
-                Account information
-              </Typography>
-              <Grid container spacing={1.5}>
-                {details.map(({ label, value }) => (
-                  <Grid key={label} size={{ xs: 12, sm: 6 }}>
-                    <ProfileDetail label={label} value={value} isDark={isDark} />
-                  </Grid>
-                ))}
+              <Divider sx={{ my: 3, borderColor: "rgba(255, 255, 255, 0.08)" }} />
+
+              {/* Details Grid */}
+              <Grid container spacing={2.5}>
+                {details.map((item, index) => {
+                  const Icon = item.icon;
+                  return (
+                    <Grid item xs={12} sm={6} key={index}>
+                      <Box
+                        sx={{
+                          p: 2.5,
+                          borderRadius: "10px",
+                          bgcolor: "rgba(255, 255, 255, 0.02)",
+                          border: "1px solid rgba(255, 255, 255, 0.06)",
+                        }}
+                      >
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 0.75 }}>
+                          <Icon sx={{ color: "#818cf8", fontSize: 20 }} />
+                          <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
+                            {item.label}
+                          </Typography>
+                        </Box>
+                        <Typography variant="body1" sx={{ fontWeight: 700, pl: 3.75 }}>
+                          {item.value}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  );
+                })}
               </Grid>
-            </CardContent>
-          </Card>
+
+              <Box sx={{ mt: 4, pt: 3, borderTop: "1px solid rgba(255, 255, 255, 0.08)", display: "flex", justifyContent: "flex-end" }}>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={<LogoutIcon />}
+                  onClick={handleLogout}
+                >
+                  Sign Out of Account
+                </Button>
+              </Box>
+            </Box>
+          </GlassCard>
         )}
-      </Container>
-    </StudentLayout>
+      </Box>
+    </Layout>
   );
 }
-
-function ProfileDetail({ label, value, isDark }) {
-  return (
-    <Paper
-      variant="outlined"
-      sx={{
-        minWidth: 0,
-        height: "100%",
-        px: { xs: 1.75, sm: 2 },
-        py: 1.75,
-        borderColor: isDark ? "divider" : "#e8edf5",
-        borderRadius: 2.5,
-        bgcolor: isDark ? "background.default" : "#f8fafc",
-      }}
-    >
-      <Typography
-        variant="caption"
-        sx={{ display: "block", color: isDark ? "text.secondary" : "#64748b", fontWeight: 650 }}
-      >
-        {label}
-      </Typography>
-      <Typography
-        sx={{
-          mt: 0.5,
-          color: isDark ? "text.primary" : "#172033",
-          fontSize: "0.95rem",
-          fontWeight: 650,
-          overflowWrap: "anywhere",
-        }}
-      >
-        {value}
-      </Typography>
-    </Paper>
-  );
-}
-
-export default StudentProfile;

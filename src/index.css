@@ -1,75 +1,38 @@
-* {
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+*,
+*::before,
+*::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+html,
 body {
+  width: 100%;
+  min-height: 100%;
   margin: 0;
+  padding: 0;
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
   width: 100%;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-.app-theme-dark {
-  min-height: 100vh;
-  color-scheme: dark;
-  background-color: #101827;
-  color: #e7edf7;
+/* Smooth transitions for interactive elements */
+a {
+  color: inherit;
+  text-decoration: none;
 }
 
-.app-theme-dark .MuiPaper-root:not(.MuiDrawer-paper),
-.app-theme-dark .MuiCard-root,
-.app-theme-dark .MuiAccordion-root,
-.app-theme-dark .MuiDialog-paper,
-.app-theme-dark .MuiPopover-paper,
-.app-theme-dark .MuiMenu-paper,
-.app-theme-dark .MuiTableContainer-root {
-  background-color: #182338;
-  color: #e7edf7;
-  border-color: #263650;
-}
-
-.app-theme-dark .MuiTableCell-root {
-  color: #e7edf7;
-  border-color: #263650;
-}
-
-.app-theme-dark .MuiOutlinedInput-root {
-  color: #e7edf7;
-  background-color: #182338;
-}
-
-.app-theme-dark .MuiOutlinedInput-notchedOutline {
-  border-color: #526078;
-}
-
-.app-theme-dark .MuiInputBase-input,
-.app-theme-dark input,
-.app-theme-dark textarea,
-.app-theme-dark select {
-  color: #e7edf7;
-  caret-color: #e7edf7;
-}
-
-.app-theme-dark input::placeholder,
-.app-theme-dark textarea::placeholder {
-  color: #a8b3c5;
-  opacity: 1;
-}
-
-.app-theme-dark .MuiSelect-icon {
-  color: #a8b3c5;
-}
-
-.app-theme-dark .MuiInputLabel-root,
-.app-theme-dark .MuiFormLabel-root,
-.app-theme-dark .MuiTypography-colorTextSecondary {
-  color: #a8b3c5;
-}
-
-.app-theme-dark .MuiFormHelperText-root {
-  color: #a8b3c5;
+/* Remove default focus ring on mouse click while preserving keyboard accessibility */
+:focus:not(:focus-visible) {
+  outline: none;
 }

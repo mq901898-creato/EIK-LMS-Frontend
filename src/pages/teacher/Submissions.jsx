@@ -1,1582 +1,450 @@
-import { useEffect, useMemo, useState } from "react";
-
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
-  CircularProgress,
-  Alert,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Button,
-  TextField,
-  InputAdornment,
-  Chip,
   IconButton,
   Tooltip,
+  TextField,
+  InputAdornment,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Divider,
-  MenuItem,
-  Paper,
+  Alert,
+  Skeleton,
+  Link,
+  Grid,
 } from "@mui/material";
 
-import SearchIcon from "@mui/icons-material/Search";
-import VisibilityIcon from "@mui/icons-material/Visibility";
 import GradeIcon from "@mui/icons-material/Grade";
+import SearchIcon from "@mui/icons-material/Search";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import AssignmentIcon from "@mui/icons-material/Assignment";
-import PersonIcon from "@mui/icons-material/Person";
-import MenuBookIcon from "@mui/icons-material/MenuBook";
-import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import CloseIcon from "@mui/icons-material/Close";
+import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import PendingIcon from "@mui/icons-material/Pending";
 
 import Layout from "../../components/layout/Layout";
+import GlassCard from "../../components/common/GlassCard";
+import StatCard from "../../components/common/StatCard";
+import StatusBadge from "../../components/common/StatusBadge";
 import api from "../../servises/api";
 
-function Submission() {
-  // =====================================================
-  // STATE
-  // =====================================================
-
+export default function Submissions() {
   const [submissions, setSubmissions] = useState([]);
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
-  // Search
   const [search, setSearch] = useState("");
-
-  // Filter
   const [statusFilter, setStatusFilter] = useState("all");
 
-  // View dialog
-  const [openViewDialog, setOpenViewDialog] = useState(false);
-
-  // Grade dialog
+  // Grade Modal State
   const [openGradeDialog, setOpenGradeDialog] = useState(false);
-
-  // Selected submission
-  const [selectedSubmission, setSelectedSubmission] =
-    useState(null);
-
-  // Grade form
-  const [gradeData, setGradeData] = useState({
-    marks: "",
-    feedback: "",
-  });
-
-  // =====================================================
-  // FETCH SUBMISSIONS
-  // =====================================================
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [gradeData, setGradeData] = useState({ marks: "", feedback: "" });
 
   const fetchSubmissions = async () => {
     try {
       setLoading(true);
       setError("");
-
-      const response = await api.get(
-        "/teacher/submissions"
-      );
-
-      console.log(
-        "Teacher submissions:",
-        response.data
-      );
-
-      const data =
-        response.data?.submissions ||
-        response.data?.data ||
-        [];
-
-      setSubmissions(
-        Array.isArray(data) ? data : []
-      );
-    } catch (error) {
-      console.error(
-        "Fetch submissions error:",
-        error
-      );
-
-      setError(
-        error.response?.data?.message ||
-          "Failed to load submissions"
-      );
+      const response = await api.get("/teacher/submissions");
+      const data = response.data?.submissions || response.data?.data || [];
+      setSubmissions(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Fetch submissions error:", err);
+      setError(err.response?.data?.message || "Failed to load student submissions.");
     } finally {
       setLoading(false);
     }
   };
 
-  // =====================================================
-  // INITIAL LOAD
-  // =====================================================
-
   useEffect(() => {
     fetchSubmissions();
   }, []);
 
-  // =====================================================
-  // OPEN VIEW DIALOG
-  // =====================================================
-
-  const handleView = (submission) => {
-    setSelectedSubmission(submission);
-    setOpenViewDialog(true);
-  };
-
-  // =====================================================
-  // CLOSE VIEW DIALOG
-  // =====================================================
-
-  const handleCloseView = () => {
-    setOpenViewDialog(false);
-    setSelectedSubmission(null);
-  };
-
-  // =====================================================
-  // OPEN GRADE DIALOG
-  // =====================================================
-
-  const handleOpenGrade = (submission) => {
-    setSelectedSubmission(submission);
-
+  const handleOpenGrade = (sub) => {
+    setSelectedSubmission(sub);
     setGradeData({
-      marks:
-        submission.marks !== undefined &&
-        submission.marks !== null
-          ? submission.marks
-          : "",
-      feedback: submission.feedback || "",
+      marks: sub.marks !== undefined && sub.marks !== null ? sub.marks : "",
+      feedback: sub.feedback || "",
     });
-
     setError("");
     setSuccess("");
-
     setOpenGradeDialog(true);
   };
 
-  // =====================================================
-  // CLOSE GRADE DIALOG
-  // =====================================================
-
-  const handleCloseGrade = () => {
-    if (saving) return;
-
-    setOpenGradeDialog(false);
-    setSelectedSubmission(null);
-
-    setGradeData({
-      marks: "",
-      feedback: "",
-    });
-  };
-
-  // =====================================================
-  // GRADE FORM CHANGE
-  // =====================================================
-
-  const handleGradeChange = (event) => {
-    const { name, value } = event.target;
-
-    setGradeData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  // =====================================================
-  // SUBMIT GRADE
-  // =====================================================
-
-  const handleSubmitGrade = async () => {
+  const handleSubmitGrade = async (e) => {
+    e.preventDefault();
     if (!selectedSubmission) return;
 
-    if (
-      gradeData.marks === "" ||
-      gradeData.marks === null
-    ) {
-      setError("Please enter marks.");
-      return;
-    }
-
     const marks = Number(gradeData.marks);
-
-    if (isNaN(marks)) {
-      setError("Marks must be a valid number.");
-      return;
-    }
-
-    if (marks < 0) {
-      setError("Marks cannot be negative.");
+    if (isNaN(marks) || marks < 0 || marks > 100) {
+      setError("Please provide a valid score between 0 and 100.");
       return;
     }
 
     try {
       setSaving(true);
       setError("");
-      setSuccess("");
 
-const response = await api.post(
-  `/reviewed/${selectedSubmission._id}`,
-        {
-          marks,
-          feedback: gradeData.feedback.trim(),
-          status: "reviewed",
-        }
-      );
+      await api.post(`/reviewed/${selectedSubmission._id}`, {
+        marks,
+        feedback: gradeData.feedback.trim(),
+        status: "reviewed",
+      });
 
-      console.log(
-        "Grade response:",
-        response.data
-      );
-
-      setSuccess(
-        "Submission reviewed successfully."
-      );
-
-      handleCloseGrade();
-
-      await fetchSubmissions();
-    } catch (error) {
-      console.error(
-        "Grade submission error:",
-        error
-      );
-
-      setError(
-        error.response?.data?.message ||
-          "Failed to review submission"
-      );
+      setSuccess("Submission evaluated and score recorded.");
+      setOpenGradeDialog(false);
+      fetchSubmissions();
+    } catch (err) {
+      console.error("Grade error:", err);
+      setError(err.response?.data?.message || "Failed to submit review.");
     } finally {
       setSaving(false);
     }
   };
 
-  // =====================================================
-  // FORMAT DATE
-  // =====================================================
-
-  const formatDate = (date) => {
-    if (!date) return "N/A";
-
-    const formattedDate = new Date(date);
-
-    if (isNaN(formattedDate.getTime())) {
-      return "Invalid date";
-    }
-
-    return formattedDate.toLocaleDateString(
-      "en-US",
-      {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      }
-    );
-  };
-
-  // =====================================================
-  // FORMAT DATE + TIME
-  // =====================================================
-
-  const formatDateTime = (date) => {
-    if (!date) return "N/A";
-
-    const formattedDate = new Date(date);
-
-    if (isNaN(formattedDate.getTime())) {
-      return "Invalid date";
-    }
-
-    return formattedDate.toLocaleString(
-      "en-US",
-      {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      }
-    );
-  };
-
-  // =====================================================
-  // GET STUDENT NAME
-  // =====================================================
-
-  const getStudentName = (submission) => {
-    const student =
-      submission.student ||
-      submission.user ||
-      submission.studentId;
-
-    if (!student) {
-      return "Unknown Student";
-    }
-
-    if (typeof student === "string") {
-      return student;
-    }
-
-    return (
-      student.name ||
-      student.fullName ||
-      student.username ||
-      student.email ||
-      "Unknown Student"
-    );
-  };
-
-  // =====================================================
-  // GET STUDENT EMAIL
-  // =====================================================
-
-  const getStudentEmail = (submission) => {
-    const student =
-      submission.student ||
-      submission.user ||
-      submission.studentId;
-
-    if (!student || typeof student === "string") {
-      return "";
-    }
-
-    return student.email || "";
-  };
-
-  // =====================================================
-  // GET ASSIGNMENT TITLE
-  // =====================================================
-
-  const getAssignmentTitle = (submission) => {
-    const assignment =
-      submission.assignment ||
-      submission.assignmentId;
-
-    if (!assignment) {
-      return "Unknown Assignment";
-    }
-
-    if (typeof assignment === "string") {
-      return assignment;
-    }
-
-    return (
-      assignment.title ||
-      "Unknown Assignment"
-    );
-  };
-
-  // =====================================================
-  // GET COURSE TITLE
-  // =====================================================
-
-  const getCourseTitle = (submission) => {
-    const course =
-      submission.course ||
-      submission.assignment?.course;
-
-    if (!course) {
-      return "Unknown Course";
-    }
-
-    if (typeof course === "string") {
-      return course;
-    }
-
-    return course.title || "Unknown Course";
-  };
-
-  // =====================================================
-  // GET STATUS
-  // =====================================================
-
-  const getStatus = (submission) => {
-    if (
-      submission.status === "reviewed" ||
-      submission.status === "graded" ||
-      submission.marks !== undefined &&
-        submission.marks !== null
-    ) {
-      return "reviewed";
-    }
-
-    return "pending";
-  };
-
-  // =====================================================
-  // FILTER SUBMISSIONS
-  // =====================================================
+  const totalCount = submissions.length;
+  const reviewedCount = submissions.filter((s) => s.status === "reviewed").length;
+  const pendingCount = totalCount - reviewedCount;
 
   const filteredSubmissions = useMemo(() => {
-    return submissions.filter((submission) => {
-      const studentName =
-        getStudentName(submission).toLowerCase();
-
-      const assignmentName =
-        getAssignmentTitle(
-          submission
-        ).toLowerCase();
-
-      const courseName =
-        getCourseTitle(
-          submission
-        ).toLowerCase();
-
-      const searchValue =
-        search.toLowerCase().trim();
-
-      const matchesSearch =
-        !searchValue ||
-        studentName.includes(searchValue) ||
-        assignmentName.includes(searchValue) ||
-        courseName.includes(searchValue);
-
-      const status = getStatus(submission);
-
-      const matchesStatus =
-        statusFilter === "all" ||
-        status === statusFilter;
-
-      return (
-        matchesSearch &&
-        matchesStatus
+    let list = submissions;
+    if (statusFilter !== "all") {
+      list = list.filter((s) => s.status === statusFilter);
+    }
+    const q = search.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (s) =>
+          s.student?.name?.toLowerCase().includes(q) ||
+          s.assignment?.title?.toLowerCase().includes(q) ||
+          s.course?.title?.toLowerCase().includes(q)
       );
-    });
-  }, [
-    submissions,
-    search,
-    statusFilter,
-  ]);
-
-  // =====================================================
-  // STATISTICS
-  // =====================================================
-
-  const totalSubmissions =
-    submissions.length;
-
-  const pendingSubmissions =
-    submissions.filter(
-      (submission) =>
-        getStatus(submission) === "pending"
-    ).length;
-
-  const reviewedSubmissions =
-    submissions.filter(
-      (submission) =>
-        getStatus(submission) === "reviewed"
-    ).length;
-
-  // =====================================================
-  // UI
-  // =====================================================
+    }
+    return list;
+  }, [submissions, statusFilter, search]);
 
   return (
     <Layout>
-
-      {/* ================================================= */}
-      {/* HEADER */}
-      {/* ================================================= */}
-
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: {
-            xs: "flex-start",
-            md: "center",
-          },
-          flexDirection: {
-            xs: "column",
-            md: "row",
-          },
-          gap: 2,
-          mb: 4,
-        }}
-      >
-
-        <Button
-          variant="outlined"
-          startIcon={<RefreshIcon />}
-          onClick={fetchSubmissions}
-          disabled={loading}
+      <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 3.5 }}>
+        {/* Header */}
+        <Box
           sx={{
-            textTransform: "none",
-            borderRadius: 2,
-            fontWeight: "bold",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: { xs: "flex-start", sm: "center" },
+            flexDirection: { xs: "column", sm: "row" },
+            gap: 2,
           }}
         >
-          Refresh
-        </Button>
-      </Box>
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 800 }}>
+              Assessment Evaluation Station
+            </Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5 }}>
+              Review student coursework submissions, deliver feedback, and assign grades.
+            </Typography>
+          </Box>
 
-      {/* ================================================= */}
-      {/* SUCCESS */}
-      {/* ================================================= */}
-
-      {success && (
-        <Alert
-          severity="success"
-          sx={{ mb: 3 }}
-          onClose={() => setSuccess("")}
-        >
-          {success}
-        </Alert>
-      )}
-
-      {/* ================================================= */}
-      {/* ERROR */}
-      {/* ================================================= */}
-
-      {error && (
-        <Alert
-          severity="error"
-          sx={{ mb: 3 }}
-          onClose={() => setError("")}
-        >
-          {error}
-        </Alert>
-      )}
-
-      {/* ================================================= */}
-      {/* STATISTICS */}
-      {/* ================================================= */}
-
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: {
-            xs: "1fr",
-            sm: "repeat(3, 1fr)",
-          },
-          gap: 2,
-          mb: 4,
-        }}
-      >
-
-        {/* TOTAL */}
-
-        <Card
-          sx={{
-            borderRadius: 3,
-            boxShadow: 2,
-          }}
-        >
-          <CardContent>
-            <Box
+          <Tooltip title="Refresh">
+            <IconButton
+              onClick={fetchSubmissions}
+              disabled={loading}
               sx={{
-                display: "flex",
-                justifyContent:
-                  "space-between",
-                alignItems: "center",
+                border: "1px solid rgba(255, 255, 255, 0.12)",
+                borderRadius: "8px",
+                p: 1,
               }}
             >
-              <Box>
-                <Typography
-                  color="text.secondary"
-                  variant="body2"
-                >
-                  Total Submissions
-                </Typography>
+              <RefreshIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
 
-                <Typography
-                  variant="h4"
-                  fontWeight="bold"
-                  sx={{ mt: 1 }}
-                >
-                  {loading ? (
-                    <CircularProgress
-                      size={28}
-                    />
-                  ) : (
-                    totalSubmissions
-                  )}
-                </Typography>
-              </Box>
+        {/* Alerts */}
+        {success && (
+          <Alert severity="success" onClose={() => setSuccess("")}>
+            {success}
+          </Alert>
+        )}
+        {error && (
+          <Alert severity="error" onClose={() => setError("")}>
+            {error}
+          </Alert>
+        )}
 
-              <AssignmentIcon
-                sx={{
-                  fontSize: 42,
-                  color: "primary.main",
-                }}
-              />
-            </Box>
-          </CardContent>
-        </Card>
+        {/* Metric Cards */}
+        <Grid container spacing={2.5}>
+          <Grid item xs={12} sm={4}>
+            <StatCard
+              title="Delivered Submissions"
+              value={totalCount}
+              icon={AssignmentIcon}
+              color="#6366f1"
+              loading={loading}
+            />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <StatCard
+              title="Awaiting Review"
+              value={pendingCount}
+              icon={PendingActionsIcon}
+              color="#f59e0b"
+              loading={loading}
+            />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <StatCard
+              title="Graded & Evaluated"
+              value={reviewedCount}
+              icon={CheckCircleIcon}
+              color="#10b981"
+              loading={loading}
+            />
+          </Grid>
+        </Grid>
 
-        {/* PENDING */}
-
-        <Card
-          sx={{
-            borderRadius: 3,
-            boxShadow: 2,
-          }}
-        >
-          <CardContent>
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent:
-                  "space-between",
-                alignItems: "center",
-              }}
-            >
-              <Box>
-                <Typography
-                  color="text.secondary"
-                  variant="body2"
-                >
-                  Pending Review
-                </Typography>
-
-                <Typography
-                  variant="h4"
-                  fontWeight="bold"
-                  sx={{ mt: 1 }}
-                >
-                  {loading ? (
-                    <CircularProgress
-                      size={28}
-                    />
-                  ) : (
-                    pendingSubmissions
-                  )}
-                </Typography>
-              </Box>
-
-              <PendingIcon
-                sx={{
-                  fontSize: 42,
-                  color: "warning.main",
-                }}
-              />
-            </Box>
-          </CardContent>
-        </Card>
-
-        {/* REVIEWED */}
-
-        <Card
-          sx={{
-            borderRadius: 3,
-            boxShadow: 2,
-          }}
-        >
-          <CardContent>
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent:
-                  "space-between",
-                alignItems: "center",
-              }}
-            >
-              <Box>
-                <Typography
-                  color="text.secondary"
-                  variant="body2"
-                >
-                  Reviewed
-                </Typography>
-
-                <Typography
-                  variant="h4"
-                  fontWeight="bold"
-                  sx={{ mt: 1 }}
-                >
-                  {loading ? (
-                    <CircularProgress
-                      size={28}
-                    />
-                  ) : (
-                    reviewedSubmissions
-                  )}
-                </Typography>
-              </Box>
-
-              <CheckCircleIcon
-                sx={{
-                  fontSize: 42,
-                  color: "success.main",
-                }}
-              />
-            </Box>
-          </CardContent>
-        </Card>
-      </Box>
-
-      {/* ================================================= */}
-      {/* SEARCH + FILTER */}
-      {/* ================================================= */}
-
-      <Card
-        sx={{
-          borderRadius: 3,
-          boxShadow: 2,
-          mb: 3,
-        }}
-      >
-        <CardContent>
+        {/* Table Card */}
+        <GlassCard sx={{ p: 0, overflow: "hidden" }}>
+          {/* Toolbar */}
           <Box
             sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                md: "2fr 1fr",
-              },
+              p: 2.5,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
               gap: 2,
+              borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
             }}
           >
-
-            {/* SEARCH */}
+            <Box sx={{ display: "flex", gap: 1 }}>
+              {[
+                { id: "all", label: "All Works" },
+                { id: "pending", label: "Pending" },
+                { id: "reviewed", label: "Reviewed" },
+              ].map((tab) => (
+                <Button
+                  key={tab.id}
+                  size="small"
+                  variant={statusFilter === tab.id ? "contained" : "outlined"}
+                  onClick={() => setStatusFilter(tab.id)}
+                  sx={{
+                    borderRadius: "6px",
+                    px: 2,
+                    fontSize: "0.8rem",
+                    ...(statusFilter !== tab.id && {
+                      borderColor: "rgba(255, 255, 255, 0.1)",
+                      color: "text.secondary",
+                    }),
+                  }}
+                >
+                  {tab.label}
+                </Button>
+              ))}
+            </Box>
 
             <TextField
-              fullWidth
-              placeholder="Search student, assignment or course..."
+              size="small"
+              placeholder="Search by student, assignment, or course..."
               value={search}
-              onChange={(e) =>
-                setSearch(e.target.value)
-              }
+              onChange={(e) => setSearch(e.target.value)}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon />
+                    <SearchIcon sx={{ color: "text.secondary", fontSize: 18 }} />
                   </InputAdornment>
                 ),
               }}
+              sx={{ width: { xs: "100%", sm: 340 } }}
             />
-
-            {/* FILTER */}
-
-            <TextField
-              select
-              fullWidth
-              label="Filter Status"
-              value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(
-                  e.target.value
-                )
-              }
-            >
-              <MenuItem value="all">
-                All Submissions
-              </MenuItem>
-
-              <MenuItem value="pending">
-                Pending
-              </MenuItem>
-
-              <MenuItem value="reviewed">
-                Reviewed
-              </MenuItem>
-            </TextField>
           </Box>
-        </CardContent>
-      </Card>
 
-      {/* ================================================= */}
-      {/* LOADING */}
-      {/* ================================================= */}
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ width: 60 }}>#</TableCell>
+                  <TableCell>Student</TableCell>
+                  <TableCell>Assignment Title</TableCell>
+                  <TableCell>Course</TableCell>
+                  <TableCell>Work Link</TableCell>
+                  <TableCell>Score</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell align="center" sx={{ width: 140 }}>
+                    Action
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell><Skeleton width={20} /></TableCell>
+                      <TableCell><Skeleton width={140} /></TableCell>
+                      <TableCell><Skeleton width={160} /></TableCell>
+                      <TableCell><Skeleton width={120} /></TableCell>
+                      <TableCell><Skeleton width={100} /></TableCell>
+                      <TableCell><Skeleton width={60} /></TableCell>
+                      <TableCell><Skeleton width={80} /></TableCell>
+                      <TableCell align="center"><Skeleton width={80} sx={{ mx: "auto" }} /></TableCell>
+                    </TableRow>
+                  ))
+                ) : filteredSubmissions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} sx={{ textAlign: "center", py: 6 }}>
+                      <Typography variant="body1" sx={{ color: "text.secondary", fontWeight: 500 }}>
+                        No submissions matching your filter criteria.
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredSubmissions.map((sub, index) => {
+                    const isReviewed = sub.status === "reviewed";
 
-      {loading ? (
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            py: 10,
-          }}
-        >
-          <CircularProgress />
-        </Box>
-      ) : filteredSubmissions.length === 0 ? (
-
-        /* ================================================= */
-        /* EMPTY */
-        /* ================================================= */
-
-        <Card
-          sx={{
-            borderRadius: 3,
-            boxShadow: 2,
-          }}
-        >
-          <CardContent
-            sx={{
-              textAlign: "center",
-              py: 8,
-            }}
-          >
-            <AssignmentIcon
-              sx={{
-                fontSize: 70,
-                color: "text.secondary",
-                mb: 2,
-              }}
-            />
-
-            <Typography
-              variant="h5"
-              fontWeight="bold"
-            >
-              No Submissions Found
-            </Typography>
-
-            <Typography
-              color="text.secondary"
-              sx={{ mt: 1 }}
-            >
-              There are no submissions matching
-              your search or filter.
-            </Typography>
-          </CardContent>
-        </Card>
-
-      ) : (
-
-        /* ================================================= */
-        /* SUBMISSION CARDS */
-        /* ================================================= */
-
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "1fr",
-              md: "1fr 1fr",
-              xl: "repeat(3, 1fr)",
-            },
-            gap: 3,
-          }}
-        >
-          {filteredSubmissions.map(
-            (submission) => {
-              const status =
-                getStatus(submission);
-
-              const reviewed =
-                status === "reviewed";
-
-              return (
-                <Card
-                  key={submission._id}
-                  sx={{
-                    borderRadius: 3,
-                    boxShadow: 2,
-                    transition: "0.2s",
-                    height: "100%",
-
-                    "&:hover": {
-                      transform:
-                        "translateY(-3px)",
-                      boxShadow: 5,
-                    },
-                  }}
-                >
-                  <CardContent sx={{ p: 3 }}>
-
-                    {/* TOP */}
-
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent:
-                          "space-between",
-                        alignItems:
-                          "flex-start",
-                        mb: 2,
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems:
-                            "center",
-                          gap: 1.5,
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            width: 48,
-                            height: 48,
-                            borderRadius: 2,
-                            bgcolor:
-                              "primary.main",
-                            color:
-                              "white",
-                            display:
-                              "flex",
-                            alignItems:
-                              "center",
-                            justifyContent:
-                              "center",
-                          }}
-                        >
-                          <PersonIcon />
-                        </Box>
-
-                        <Box>
-                          <Typography
-                            fontWeight="bold"
-                          >
-                            {getStudentName(
-                              submission
-                            )}
-                          </Typography>
-
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                          >
-                            {getStudentEmail(
-                              submission
-                            )}
-                          </Typography>
-                        </Box>
-                      </Box>
-
-                      <Chip
-                        size="small"
-                        icon={
-                          reviewed ? (
-                            <CheckCircleIcon />
+                    return (
+                      <TableRow key={sub._id} hover>
+                        <TableCell sx={{ color: "text.secondary", fontSize: "0.8rem" }}>
+                          {index + 1}
+                        </TableCell>
+                        <TableCell sx={{ fontWeight: 600 }}>
+                          {sub.student?.name || "Student"}
+                        </TableCell>
+                        <TableCell sx={{ fontWeight: 600, color: "text.primary" }}>
+                          {sub.assignment?.title || "Coursework Task"}
+                        </TableCell>
+                        <TableCell sx={{ color: "text.secondary" }}>
+                          {sub.course?.title || "Track"}
+                        </TableCell>
+                        <TableCell>
+                          {sub.submissionURL ? (
+                            <Link
+                              href={sub.submissionURL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              sx={{
+                                color: "#818cf8",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 0.5,
+                                fontSize: "0.85rem",
+                              }}
+                            >
+                              Solution <OpenInNewIcon sx={{ fontSize: 13 }} />
+                            </Link>
                           ) : (
-                            <PendingIcon />
-                          )
-                        }
-                        label={
-                          reviewed
-                            ? "Reviewed"
-                            : "Pending"
-                        }
-                        color={
-                          reviewed
-                            ? "success"
-                            : "warning"
-                        }
-                      />
-                    </Box>
-
-                    <Divider sx={{ mb: 2 }} />
-
-                    {/* ASSIGNMENT */}
-
-                    <Box
-                      sx={{
-                        display: "flex",
-                        gap: 1,
-                        mb: 1.5,
-                      }}
-                    >
-                      <AssignmentIcon
-                        fontSize="small"
-                        color="primary"
-                      />
-
-                      <Box>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                        >
-                          Assignment
-                        </Typography>
-
-                        <Typography
-                          variant="body2"
-                          fontWeight="bold"
-                        >
-                          {getAssignmentTitle(
-                            submission
+                            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                              No link attached
+                            </Typography>
                           )}
-                        </Typography>
-                      </Box>
-                    </Box>
-
-                    {/* COURSE */}
-
-                    <Box
-                      sx={{
-                        display: "flex",
-                        gap: 1,
-                        mb: 1.5,
-                      }}
-                    >
-                      <MenuBookIcon
-                        fontSize="small"
-                        color="primary"
-                      />
-
-                      <Box>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                        >
-                          Course
-                        </Typography>
-
-                        <Typography
-                          variant="body2"
-                          fontWeight="bold"
-                        >
-                          {getCourseTitle(
-                            submission
-                          )}
-                        </Typography>
-                      </Box>
-                    </Box>
-
-                    {/* DATE */}
-
-                    <Box
-                      sx={{
-                        display: "flex",
-                        gap: 1,
-                        mb: 2,
-                      }}
-                    >
-                      <CalendarMonthIcon
-                        fontSize="small"
-                        color="primary"
-                      />
-
-                      <Box>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                        >
-                          Submitted
-                        </Typography>
-
-                        <Typography
-                          variant="body2"
-                        >
-                          {formatDate(
-                            submission.createdAt ||
-                              submission.submittedAt ||
-                              submission.date
-                          )}
-                        </Typography>
-                      </Box>
-                    </Box>
-
-                    {/* MARKS */}
-
-                    {reviewed && (
-                      <Box
-                        sx={{
-                          bgcolor:
-                            "success.50",
-                          borderRadius: 2,
-                          p: 1.5,
-                          mb: 2,
-                        }}
-                      >
-                        <Typography
-                          variant="body2"
-                          fontWeight="bold"
-                        >
-                          Marks:{" "}
-                          {submission.marks}
-                        </Typography>
-
-                        {submission.feedback && (
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                          >
-                            Feedback:{" "}
-                            {
-                              submission.feedback
-                            }
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 800, color: isReviewed ? "#10b981" : "text.secondary" }}>
+                            {sub.marks !== undefined && sub.marks !== null ? `${sub.marks}/100` : "—"}
                           </Typography>
-                        )}
-                      </Box>
-                    )}
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge status={isReviewed ? "active" : "pending"} label={isReviewed ? "GRADED" : "PENDING"} />
+                        </TableCell>
+                        <TableCell align="center">
+                          <Button
+                            size="small"
+                            variant={isReviewed ? "outlined" : "contained"}
+                            startIcon={<GradeIcon />}
+                            onClick={() => handleOpenGrade(sub)}
+                            sx={{ fontSize: "0.75rem", py: 0.5 }}
+                          >
+                            {isReviewed ? "Edit Grade" : "Evaluate"}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </GlassCard>
 
-                    {/* ACTIONS */}
-
-                    <Box
-                      sx={{
-                        display: "flex",
-                        gap: 1,
-                        mt: 2,
-                      }}
-                    >
-                      <Button
-                        fullWidth
-                        variant="outlined"
-                        startIcon={
-                          <VisibilityIcon />
-                        }
-                        onClick={() =>
-                          handleView(
-                            submission
-                          )
-                        }
-                        sx={{
-                          textTransform:
-                            "none",
-                          borderRadius: 2,
-                        }}
-                      >
-                        View
-                      </Button>
-
-                      <Button
-                        fullWidth
-                        variant="contained"
-                        startIcon={
-                          <GradeIcon />
-                        }
-                        onClick={() =>
-                          handleOpenGrade(
-                            submission
-                          )
-                        }
-                        sx={{
-                          textTransform:
-                            "none",
-                          borderRadius: 2,
-                        }}
-                      >
-                        {reviewed
-                          ? "Edit Grade"
-                          : "Grade"}
-                      </Button>
-                    </Box>
-                  </CardContent>
-                </Card>
-              );
-            }
-          )}
-        </Box>
-      )}
-
-      {/* ================================================= */}
-      {/* VIEW SUBMISSION DIALOG */}
-      {/* ================================================= */}
-
-      <Dialog
-        open={openViewDialog}
-        onClose={handleCloseView}
-        fullWidth
-        maxWidth="md"
-      >
-        <DialogTitle
-          sx={{
-            display: "flex",
-            justifyContent:
-              "space-between",
-            alignItems: "center",
-            fontWeight: "bold",
-          }}
+        {/* Grading Dialog */}
+        <Dialog
+          open={openGradeDialog}
+          onClose={() => !saving && setOpenGradeDialog(false)}
+          maxWidth="xs"
+          fullWidth
         >
-          Submission Details
-
-          <IconButton
-            onClick={handleCloseView}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-
-        <DialogContent dividers>
-          {selectedSubmission && (
-            <Box>
-
-              {/* STUDENT */}
-
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 2,
-                  bgcolor:
-                    "background.default",
-                  borderRadius: 2,
-                  mb: 2,
-                }}
-              >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                >
-                  Student
+          <DialogTitle sx={{ fontWeight: 800 }}>
+            Evaluate Student Submission
+          </DialogTitle>
+          <Box component="form" onSubmit={handleSubmitGrade}>
+            <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: 1 }}>
+              <Box>
+                <Typography variant="caption" sx={{ color: "text.secondary", display: "block" }}>
+                  Student: <strong>{selectedSubmission?.student?.name}</strong>
                 </Typography>
-
-                <Typography
-                  variant="h6"
-                  fontWeight="bold"
-                >
-                  {getStudentName(
-                    selectedSubmission
-                  )}
+                <Typography variant="caption" sx={{ color: "text.secondary", display: "block" }}>
+                  Assignment: <strong>{selectedSubmission?.assignment?.title}</strong>
                 </Typography>
+              </Box>
 
-                {getStudentEmail(
-                  selectedSubmission
-                ) && (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                  >
-                    {getStudentEmail(
-                      selectedSubmission
-                    )}
+              {selectedSubmission?.submissionURL && (
+                <Box>
+                  <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mb: 0.5 }}>
+                    Submission Link:
                   </Typography>
-                )}
-              </Paper>
-
-              {/* ASSIGNMENT */}
-
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-              >
-                Assignment
-              </Typography>
-
-              <Typography
-                variant="h6"
-                fontWeight="bold"
-                sx={{ mb: 2 }}
-              >
-                {getAssignmentTitle(
-                  selectedSubmission
-                )}
-              </Typography>
-
-              {/* COURSE */}
-
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-              >
-                Course
-              </Typography>
-
-              <Typography
-                variant="body1"
-                sx={{ mb: 2 }}
-              >
-                {getCourseTitle(
-                  selectedSubmission
-                )}
-              </Typography>
-
-              <Divider sx={{ mb: 2 }} />
-
-              {/* SUBMISSION CONTENT */}
-
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                sx={{ mb: 1 }}
-              >
-                Student Submission
-              </Typography>
-
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 2,
-                  border: "1px solid",
-                  borderColor:
-                    "divider",
-                  borderRadius: 2,
-                  minHeight: 120,
-                  whiteSpace:
-                    "pre-wrap",
-                }}
-              >
-                <Typography>
-                  {selectedSubmission.content ||
-                    selectedSubmission.answer ||
-                    selectedSubmission.text ||
-                    selectedSubmission.submissionText ||
-                    "No text submission available."}
-                </Typography>
-              </Paper>
-
-              {/* FILE */}
-
-              {(selectedSubmission.file ||
-                selectedSubmission.fileUrl ||
-                selectedSubmission.document) && (
-                <Box sx={{ mt: 2 }}>
-                  <Typography
-                    variant="subtitle2"
-                    color="text.secondary"
-                    sx={{ mb: 1 }}
-                  >
-                    Attached File
-                  </Typography>
-
-                  <Button
-                    variant="outlined"
-                    href={
-                      selectedSubmission.file ||
-                      selectedSubmission.fileUrl ||
-                      selectedSubmission.document
-                    }
+                  <Link
+                    href={selectedSubmission.submissionURL}
                     target="_blank"
                     rel="noopener noreferrer"
+                    sx={{ color: "#818cf8", fontSize: "0.85rem", wordBreak: "break-all" }}
                   >
-                    Open Submission File
-                  </Button>
+                    {selectedSubmission.submissionURL}
+                  </Link>
                 </Box>
               )}
 
-              {/* SUBMITTED DATE */}
-
-              <Box sx={{ mt: 3 }}>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                >
-                  Submitted At
-                </Typography>
-
-                <Typography>
-                  {formatDateTime(
-                    selectedSubmission.createdAt ||
-                      selectedSubmission.submittedAt ||
-                      selectedSubmission.date
-                  )}
-                </Typography>
-              </Box>
-
-              {/* CURRENT GRADE */}
-
-              {getStatus(
-                selectedSubmission
-              ) === "reviewed" && (
-                <Paper
-                  elevation={0}
-                  sx={{
-                    mt: 3,
-                    p: 2,
-                    borderRadius: 2,
-                    bgcolor:
-                      "success.50",
-                  }}
-                >
-                  <Typography
-                    fontWeight="bold"
-                  >
-                    Current Grade
-                  </Typography>
-
-                  <Typography
-                    variant="h5"
-                    fontWeight="bold"
-                  >
-                    {selectedSubmission.marks}
-                  </Typography>
-
-                  {selectedSubmission.feedback && (
-                    <Typography
-                      color="text.secondary"
-                      sx={{ mt: 1 }}
-                    >
-                      {
-                        selectedSubmission.feedback
-                      }
-                    </Typography>
-                  )}
-                </Paper>
-              )}
-            </Box>
-          )}
-        </DialogContent>
-
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button
-            onClick={handleCloseView}
-            sx={{
-              textTransform: "none",
-            }}
-          >
-            Close
-          </Button>
-
-          {selectedSubmission && (
-            <Button
-              variant="contained"
-              startIcon={<GradeIcon />}
-              onClick={() => {
-                handleCloseView();
-                handleOpenGrade(
-                  selectedSubmission
-                );
-              }}
-              sx={{
-                textTransform: "none",
-              }}
-            >
-              Grade Submission
-            </Button>
-          )}
-        </DialogActions>
-      </Dialog>
-
-      {/* ================================================= */}
-      {/* GRADE DIALOG */}
-      {/* ================================================= */}
-
-      <Dialog
-        open={openGradeDialog}
-        onClose={handleCloseGrade}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle
-          sx={{
-            display: "flex",
-            justifyContent:
-              "space-between",
-            alignItems: "center",
-            fontWeight: "bold",
-          }}
-        >
-          Grade Submission
-
-          <IconButton
-            onClick={handleCloseGrade}
-            disabled={saving}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-
-        <DialogContent dividers>
-          {selectedSubmission && (
-            <>
-              <Box sx={{ mb: 3 }}>
-                <Typography
-                  color="text.secondary"
-                  variant="body2"
-                >
-                  Student
-                </Typography>
-
-                <Typography
-                  variant="h6"
-                  fontWeight="bold"
-                >
-                  {getStudentName(
-                    selectedSubmission
-                  )}
-                </Typography>
-              </Box>
-
-              <Box sx={{ mb: 3 }}>
-                <Typography
-                  color="text.secondary"
-                  variant="body2"
-                >
-                  Assignment
-                </Typography>
-
-                <Typography
-                  variant="h6"
-                  fontWeight="bold"
-                >
-                  {getAssignmentTitle(
-                    selectedSubmission
-                  )}
-                </Typography>
-              </Box>
-
-              {/* MARKS */}
-
               <TextField
-                fullWidth
-                label="Marks"
-                name="marks"
+                label="Score / Marks (out of 100)"
                 type="number"
-                value={gradeData.marks}
-                onChange={handleGradeChange}
-                margin="normal"
                 required
-                inputProps={{
-                  min: 0,
-                }}
-                placeholder="Enter marks"
+                fullWidth
+                size="small"
+                inputProps={{ min: 0, max: 100 }}
+                value={gradeData.marks}
+                onChange={(e) => setGradeData({ ...gradeData, marks: e.target.value })}
               />
-
-              {/* FEEDBACK */}
 
               <TextField
-                fullWidth
-                label="Feedback"
-                name="feedback"
-                value={gradeData.feedback}
-                onChange={handleGradeChange}
-                margin="normal"
+                label="Feedback & Guidance Notes"
                 multiline
-                rows={5}
-                placeholder="Write feedback for the student..."
+                minRows={3}
+                fullWidth
+                size="small"
+                placeholder="Praise strengths or suggest improvements for the student..."
+                value={gradeData.feedback}
+                onChange={(e) => setGradeData({ ...gradeData, feedback: e.target.value })}
               />
-            </>
-          )}
-        </DialogContent>
-
-        <DialogActions
-          sx={{
-            px: 3,
-            py: 2,
-          }}
-        >
-          <Button
-            onClick={handleCloseGrade}
-            disabled={saving}
-            sx={{
-              textTransform: "none",
-            }}
-          >
-            Cancel
-          </Button>
-
-          <Button
-            variant="contained"
-            startIcon={
-              saving ? null : <GradeIcon />
-            }
-            onClick={handleSubmitGrade}
-            disabled={
-              saving ||
-              gradeData.marks === ""
-            }
-            sx={{
-              minWidth: 150,
-              textTransform: "none",
-              fontWeight: "bold",
-            }}
-          >
-            {saving ? (
-              <>
-                <CircularProgress
-                  size={20}
-                  color="inherit"
-                  sx={{ mr: 1 }}
-                />
-                Saving...
-              </>
-            ) : (
-              "Save Grade"
-            )}
-          </Button>
-        </DialogActions>
-      </Dialog>
+            </DialogContent>
+            <DialogActions sx={{ px: 3, pb: 2.5 }}>
+              <Button onClick={() => setOpenGradeDialog(false)} disabled={saving} variant="outlined" size="small">
+                Cancel
+              </Button>
+              <Button type="submit" variant="contained" disabled={saving} size="small">
+                {saving ? "Recording..." : "Save Grade & Feedback"}
+              </Button>
+            </DialogActions>
+          </Box>
+        </Dialog>
+      </Box>
     </Layout>
   );
 }
-
-export default Submission;

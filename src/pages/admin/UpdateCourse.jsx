@@ -1,11 +1,7 @@
-import Layout from "../../components/layout/Layout";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import api from "../../servises/api";
-
 import {
   Box,
-  Paper,
   Typography,
   TextField,
   Button,
@@ -15,7 +11,30 @@ import {
   MenuItem,
   FormControlLabel,
   Switch,
+  Alert,
+  Grid,
+  Stack,
+  CardMedia,
+  Skeleton,
 } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import SaveIcon from "@mui/icons-material/Save";
+
+import Layout from "../../components/layout/Layout";
+import GlassCard from "../../components/common/GlassCard";
+import api from "../../servises/api";
+
+const CATEGORIES = [
+  "Computer Science",
+  "Full-Stack Web Development",
+  "Frontend",
+  "Backend",
+  "AI & Data Science",
+  "Mobile App Development",
+  "Mathematics & Statistics",
+  "Science & Physics",
+  "Business & Languages",
+];
 
 function UpdateCourse() {
   const { id } = useParams();
@@ -28,12 +47,15 @@ function UpdateCourse() {
   const [thumbnail, setThumbnail] = useState("");
   const [isPublished, setIsPublished] = useState(false);
 
-  // Get single course
+  const [fetching, setFetching] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
   useEffect(() => {
     const fetchCourse = async () => {
       try {
+        setFetching(true);
         const response = await api.get(`/admin/getSingleCourse/${id}`);
-
         const course = response.data.course;
 
         setTitle(course.title || "");
@@ -42,177 +64,196 @@ function UpdateCourse() {
         setPrice(course.price || "");
         setThumbnail(course.thumbnail || "");
         setIsPublished(course.isPublished || false);
-
-      } catch (error) {
-        console.error("Error fetching course:", error);
-        console.error("Backend response:", error.response?.data);
+      } catch (err) {
+        console.error("Error fetching course:", err);
+        setError(err.response?.data?.message || "Failed to retrieve course details.");
+      } finally {
+        setFetching(false);
       }
     };
 
     fetchCourse();
   }, [id]);
 
-  // Update course
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setLoading(true);
+    setError("");
 
     try {
-      const response = await api.put(
-        `/admin/updateCourse/${id}`,
-        {
-          title,
-          description,
-          category,
-          price,
-          thumbnail,
-          isPublished,
-        }
-      );
-
-      console.log(response.data);
-
-      alert("Course updated successfully");
+      await api.put(`/admin/updateCourse/${id}`, {
+        title: title.trim(),
+        description: description.trim(),
+        category,
+        price: Number(price) || 0,
+        thumbnail: thumbnail.trim(),
+        isPublished,
+      });
 
       navigate("/admin/courses");
-
-    } catch (error) {
-      console.error("Error updating course:", error);
-      console.error("Backend response:", error.response?.data);
+    } catch (err) {
+      console.error("Error updating course:", err);
+      setError(err.response?.data?.message || "Failed to update course.");
+      setLoading(false);
     }
   };
 
   return (
     <Layout>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          mt: 4,
-        }}
-      >
-        <Paper
-          elevation={4}
-          sx={{
-            width: "100%",
-            maxWidth: 650,
-            p: 4,
-            borderRadius: 3,
-          }}
-        >
-          <Typography
-            variant="h4"
-            fontWeight="bold"
-            sx={{ mb: 3 }}
+      <Box sx={{ width: "100%", maxWidth: 900, mx: "auto", display: "flex", flexDirection: "column", gap: 3.5 }}>
+        {/* Header */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate("/admin/courses")}
           >
-            Update Course
-          </Typography>
+            Back
+          </Button>
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 800 }}>
+              Edit Course Track
+            </Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
+              Update curriculum parameters, pricing, and publication status.
+            </Typography>
+          </Box>
+        </Box>
 
-          <Box
-            component="form"
-            onSubmit={handleSubmit}
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 2,
-            }}
-          >
-            <TextField
-              label="Course Title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              fullWidth
-              required
-            />
+        {error && (
+          <Alert severity="error" onClose={() => setError("")}>
+            {error}
+          </Alert>
+        )}
 
-            <TextField
-              label="Description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              fullWidth
-              multiline
-              rows={4}
-              required
-            />
+        <GlassCard component="form" onSubmit={handleSubmit} sx={{ p: 4 }}>
+          {fetching ? (
+            <Stack spacing={2.5}>
+              <Skeleton height={50} />
+              <Skeleton height={50} />
+              <Skeleton height={120} />
+              <Skeleton height={50} width={200} />
+            </Stack>
+          ) : (
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <TextField
+                  label="Course Title"
+                  required
+                  fullWidth
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </Grid>
 
-            <FormControl fullWidth required>
-              <InputLabel>Category</InputLabel>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth required size="small">
+                  <InputLabel id="category-label">Academic Category</InputLabel>
+                  <Select
+                    labelId="category-label"
+                    label="Academic Category"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                  >
+                    {CATEGORIES.map((cat) => (
+                      <MenuItem key={cat} value={cat}>
+                        {cat}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
 
-              <Select
-                value={category}
-                label="Category"
-                onChange={(e) => setCategory(e.target.value)}
-              >
-                <MenuItem value="Frontend">
-                  Frontend
-                </MenuItem>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Tuition / Fee (PKR)"
+                  type="number"
+                  required
+                  fullWidth
+                  size="small"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                />
+              </Grid>
 
-                <MenuItem value="Backend">
-                  Backend
-                </MenuItem>
+              <Grid item xs={12}>
+                <TextField
+                  label="Thumbnail Image URL"
+                  fullWidth
+                  size="small"
+                  value={thumbnail}
+                  onChange={(e) => setThumbnail(e.target.value)}
+                />
+              </Grid>
 
-                <MenuItem value="Full Stack">
-                  Full Stack
-                </MenuItem>
+              {thumbnail && (
+                <Grid item xs={12}>
+                  <Box
+                    sx={{
+                      borderRadius: "10px",
+                      overflow: "hidden",
+                      border: "1px solid rgba(255, 255, 255, 0.1)",
+                      maxHeight: 200,
+                    }}
+                  >
+                    <CardMedia component="img" height="180" image={thumbnail} alt="Preview" />
+                  </Box>
+                </Grid>
+              )}
 
-                <MenuItem value="Database">
-                  Database
-                </MenuItem>
+              <Grid item xs={12}>
+                <TextField
+                  label="Course Syllabus & Description"
+                  multiline
+                  minRows={4}
+                  required
+                  fullWidth
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </Grid>
 
-                <MenuItem value="Other">
-                  Other
-                </MenuItem>
-              </Select>
-            </FormControl>
-
-            <TextField
-              label="Price"
-              type="number"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              fullWidth
-            />
-
-            <TextField
-              label="Thumbnail URL"
-              value={thumbnail}
-              onChange={(e) => setThumbnail(e.target.value)}
-              fullWidth
-            />
-
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={isPublished}
-                  onChange={(e) =>
-                    setIsPublished(e.target.checked)
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={isPublished}
+                      onChange={(e) => setIsPublished(e.target.checked)}
+                      color="primary"
+                    />
+                  }
+                  label={
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      Publish in Student Catalog ({isPublished ? "Active" : "Draft / Hidden"})
+                    </Typography>
                   }
                 />
-              }
-              label={
-                isPublished
-                  ? "Published"
-                  : "Draft"
-              }
-            />
+              </Grid>
 
-            <Button
-              type="submit"
-              variant="contained"
-              size="large"
-            >
-              Update Course
-            </Button>
-
-            <Button
-              variant="outlined"
-              onClick={() =>
-                navigate("/admin/courses")
-              }
-            >
-              Cancel
-            </Button>
-          </Box>
-        </Paper>
+              <Grid item xs={12}>
+                <Stack direction="row" spacing={2} sx={{ pt: 1 }}>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    startIcon={<SaveIcon />}
+                    disabled={loading}
+                    sx={{ px: 3.5, py: 1 }}
+                  >
+                    {loading ? "Saving Changes..." : "Save Course"}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={() => navigate("/admin/courses")}
+                    disabled={loading}
+                  >
+                    Cancel
+                  </Button>
+                </Stack>
+              </Grid>
+            </Grid>
+          )}
+        </GlassCard>
       </Box>
     </Layout>
   );

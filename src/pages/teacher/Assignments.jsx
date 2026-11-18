@@ -1,66 +1,51 @@
-import { useEffect, useState } from "react";
-
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
-  CircularProgress,
-  Alert,
+  Grid,
   Button,
+  Chip,
+  IconButton,
+  Tooltip,
+  TextField,
+  InputAdornment,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
+  FormControl,
+  InputLabel,
+  Select,
   MenuItem,
-  Chip,
-  IconButton,
-  Tooltip,
-  Divider,
+  Alert,
+  Skeleton,
 } from "@mui/material";
 
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AssignmentIcon from "@mui/icons-material/Assignment";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import SearchIcon from "@mui/icons-material/Search";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import MenuBookIcon from "@mui/icons-material/MenuBook";
-import CloseIcon from "@mui/icons-material/Close";
 
 import Layout from "../../components/layout/Layout";
+import GlassCard from "../../components/common/GlassCard";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
 import api from "../../servises/api";
 
-function Assignment() {
-  // =====================================================
-  // STATE
-  // =====================================================
-
+export default function TeacherAssignments() {
   const [assignments, setAssignments] = useState([]);
   const [courses, setCourses] = useState([]);
-
   const [loading, setLoading] = useState(true);
-  const [coursesLoading, setCoursesLoading] = useState(true);
-
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [search, setSearch] = useState("");
 
-  // Dialog
+  // Modal
   const [openDialog, setOpenDialog] = useState(false);
-
-  // Edit mode
   const [editingAssignment, setEditingAssignment] = useState(null);
-
-  // Create/update loading
   const [saving, setSaving] = useState(false);
-
-  // Delete loading
-  const [deletingId, setDeletingId] = useState(null);
-
-  // =====================================================
-  // FORM
-  // =====================================================
-
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -68,1056 +53,443 @@ function Assignment() {
     dueDate: "",
   });
 
-  // =====================================================
-  // FETCH COURSES
-  // =====================================================
-
-  const fetchCourses = async () => {
-    try {
-      setCoursesLoading(true);
-
-      const response = await api.get("/teacher/courses");
-
-      const courseData =
-        response.data?.courses ||
-        response.data?.data ||
-        [];
-
-      setCourses(Array.isArray(courseData) ? courseData : []);
-    } catch (error) {
-      console.error("Courses error:", error);
-
-      setError(
-        error.response?.data?.message ||
-          "Failed to load courses"
-      );
-    } finally {
-      setCoursesLoading(false);
-    }
-  };
-
-  // =====================================================
-  // FETCH ASSIGNMENTS
-  // =====================================================
+  // Delete
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchAssignments = async () => {
     try {
       setLoading(true);
       setError("");
 
-      /*
-       * Your backend requires:
-       * GET /getAllAssignment/:id
-       *
-       * Therefore we fetch assignments course-by-course.
-       */
-
       const coursesResponse = await api.get("/teacher/courses");
-
-      const courseData =
-        coursesResponse.data?.courses ||
-        coursesResponse.data?.data ||
-        [];
-
-      const validCourses = Array.isArray(courseData)
-        ? courseData
-        : [];
-
+      const courseData = coursesResponse.data?.courses || coursesResponse.data?.data || [];
+      const validCourses = Array.isArray(courseData) ? courseData : [];
       setCourses(validCourses);
 
       let allAssignments = [];
-
       for (const course of validCourses) {
         try {
-          const response = await api.get(
-            `/getAllAssignment/${course._id}`
-          );
-
-          const assignmentData =
-            response.data?.assignments ||
-            response.data?.data ||
-            [];
-
-          if (Array.isArray(assignmentData)) {
-            allAssignments = [
-              ...allAssignments,
-              ...assignmentData,
-            ];
+          const res = await api.get(`/getAllAssignment/${course._id}`);
+          const data = res.data?.assignments || res.data?.data || [];
+          if (Array.isArray(data)) {
+            allAssignments = [...allAssignments, ...data];
           }
-        } catch (courseError) {
-          console.error(
-            `Failed to load assignments for course ${course._id}`,
-            courseError
-          );
+        } catch {
+          // ignore single course failure
         }
       }
 
-      /*
-       * Prevent duplicate assignments
-       */
-      const uniqueAssignments = Array.from(
-        new Map(
-          allAssignments.map((assignment) => [
-            assignment._id,
-            assignment,
-          ])
-        ).values()
+      const unique = Array.from(
+        new Map(allAssignments.map((a) => [a._id, a])).values()
       );
-
-      setAssignments(uniqueAssignments);
-    } catch (error) {
-      console.error("Assignment error:", error);
-
-      setError(
-        error.response?.data?.message ||
-          "Failed to load assignments"
-      );
+      setAssignments(unique);
+    } catch (err) {
+      console.error("Assignment fetch error:", err);
+      setError(err.response?.data?.message || "Failed to load coursework assignments.");
     } finally {
       setLoading(false);
-      setCoursesLoading(false);
     }
   };
-
-  // =====================================================
-  // INITIAL LOAD
-  // =====================================================
 
   useEffect(() => {
     fetchAssignments();
   }, []);
 
-  // =====================================================
-  // OPEN CREATE DIALOG
-  // =====================================================
-
-  const handleOpenCreate = () => {
+  const handleOpenAdd = () => {
     setEditingAssignment(null);
-
     setFormData({
       title: "",
       description: "",
-      course: "",
+      course: courses[0]?._id || "",
       dueDate: "",
     });
-
     setError("");
     setSuccess("");
-
     setOpenDialog(true);
   };
 
-  // =====================================================
-  // OPEN EDIT DIALOG
-  // =====================================================
-
   const handleOpenEdit = (assignment) => {
     setEditingAssignment(assignment);
-
-    /*
-     * Course can sometimes be populated as an object
-     * and sometimes be just an ID.
-     */
-
     const courseId =
-      typeof assignment.course === "object"
-        ? assignment.course?._id
-        : assignment.course;
-
-    let formattedDate = "";
-
-    if (assignment.dueDate) {
-      const date = new Date(assignment.dueDate);
-
-      if (!isNaN(date.getTime())) {
-        formattedDate = date.toISOString().slice(0, 16);
-      }
-    }
+      typeof assignment.course === "object" ? assignment.course?._id : assignment.course;
 
     setFormData({
       title: assignment.title || "",
       description: assignment.description || "",
       course: courseId || "",
-      dueDate: formattedDate,
+      dueDate: assignment.dueDate ? new Date(assignment.dueDate).toISOString().split("T")[0] : "",
     });
-
     setError("");
     setSuccess("");
-
     setOpenDialog(true);
   };
 
-  // =====================================================
-  // CLOSE DIALOG
-  // =====================================================
-
-  const handleCloseDialog = () => {
-    if (saving) return;
-
-    setOpenDialog(false);
-    setEditingAssignment(null);
-
-    setFormData({
-      title: "",
-      description: "",
-      course: "",
-      dueDate: "",
-    });
-  };
-
-  // =====================================================
-  // FORM CHANGE
-  // =====================================================
-
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  // =====================================================
-  // VALIDATION
-  // =====================================================
-
-  const validateForm = () => {
-    if (!formData.title.trim()) {
-      setError("Assignment title is required.");
-      return false;
-    }
-
-    if (!formData.description.trim()) {
-      setError("Assignment description is required.");
-      return false;
-    }
-
-    if (!formData.course) {
-      setError("Please select a course.");
-      return false;
-    }
-
-    if (!formData.dueDate) {
-      setError("Due date is required.");
-      return false;
-    }
-
-    return true;
-  };
-
-  // =====================================================
-  // CREATE / UPDATE
-  // =====================================================
-
-  const handleSaveAssignment = async () => {
-    if (!validateForm()) return;
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
 
     try {
-      setSaving(true);
-      setError("");
-      setSuccess("");
-
-      const assignmentData = {
-        title: formData.title.trim(),
-        description: formData.description.trim(),
-        course: formData.course,
-        dueDate: new Date(formData.dueDate).toISOString(),
-      };
-
-      // UPDATE
       if (editingAssignment) {
-        const response = await api.put(
-          `/updateAssignment/${editingAssignment._id}`,
-          assignmentData
-        );
-
-        console.log(
-          "Assignment updated:",
-          response.data
-        );
-
+        await api.put(`/teacher/updateAssignment/${editingAssignment._id}`, formData);
         setSuccess("Assignment updated successfully.");
+      } else {
+        await api.post("/teacher/createAssignment", formData);
+        setSuccess("Assignment published to course students.");
       }
 
-      // CREATE
-      else {
-        const response = await api.post(
-          "/createAssignment",
-          assignmentData
-        );
-
-        console.log(
-          "Assignment created:",
-          response.data
-        );
-
-        setSuccess("Assignment created successfully.");
-      }
-
-      handleCloseDialog();
-
-      await fetchAssignments();
-    } catch (error) {
-      console.error(
-        "Save assignment error:",
-        error
-      );
-
-      setError(
-        error.response?.data?.message ||
-          "Failed to save assignment."
-      );
+      setOpenDialog(false);
+      fetchAssignments();
+    } catch (err) {
+      console.error("Save assignment error:", err);
+      setError(err.response?.data?.message || "Failed to save assignment.");
     } finally {
       setSaving(false);
     }
   };
 
-  // =====================================================
-  // DELETE ASSIGNMENT
-  // =====================================================
-
-  const handleDelete = async (assignmentId) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this assignment?"
-    );
-
-    if (!confirmed) return;
-
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
     try {
-      setDeletingId(assignmentId);
-      setError("");
-      setSuccess("");
-
-      const response = await api.delete(
-        `/deleteAssignment/${assignmentId}`
-      );
-
-      console.log(
-        "Assignment deleted:",
-        response.data
-      );
-
-      setAssignments((prev) =>
-        prev.filter(
-          (assignment) =>
-            assignment._id !== assignmentId
-        )
-      );
-
-      setSuccess(
-        "Assignment deleted successfully."
-      );
-    } catch (error) {
-      console.error(
-        "Delete assignment error:",
-        error
-      );
-
-      setError(
-        error.response?.data?.message ||
-          "Failed to delete assignment."
-      );
+      setDeleting(true);
+      await api.delete(`/teacher/deleteAssignment/${deleteTarget._id}`);
+      setSuccess("Assignment deleted successfully.");
+      setDeleteTarget(null);
+      fetchAssignments();
+    } catch (err) {
+      console.error("Delete assignment error:", err);
+      setError(err.response?.data?.message || "Failed to delete assignment.");
     } finally {
-      setDeletingId(null);
+      setDeleting(false);
     }
   };
 
-  // =====================================================
-  // FORMAT DATE
-  // =====================================================
-
-  const formatDate = (date) => {
-    if (!date) return "No due date";
-
-    const formatted = new Date(date);
-
-    if (isNaN(formatted.getTime())) {
-      return "Invalid date";
-    }
-
-    return formatted.toLocaleDateString(
-      "en-US",
-      {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      }
+  const filteredAssignments = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return assignments;
+    return assignments.filter(
+      (a) =>
+        a.title?.toLowerCase().includes(q) ||
+        a.description?.toLowerCase().includes(q) ||
+        a.course?.title?.toLowerCase().includes(q)
     );
-  };
-
-  // =====================================================
-  // CHECK OVERDUE
-  // =====================================================
-
-  const isOverdue = (date) => {
-    if (!date) return false;
-
-    return new Date(date) < new Date();
-  };
-
-  // =====================================================
-  // GET COURSE NAME
-  // =====================================================
-
-  const getCourseName = (course) => {
-    if (!course) return "Unknown Course";
-
-    if (typeof course === "object") {
-      return course.title || "Unknown Course";
-    }
-
-    const foundCourse = courses.find(
-      (item) => item._id === course
-    );
-
-    return foundCourse?.title || "Unknown Course";
-  };
-
-  // =====================================================
-  // UI
-  // =====================================================
+  }, [assignments, search]);
 
   return (
     <Layout>
-
-      {/* ================================================= */}
-      {/* HEADER */}
-      {/* ================================================= */}
-
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: {
-            xs: "flex-start",
-            sm: "center",
-          },
-          flexDirection: {
-            xs: "column",
-            sm: "row",
-          },
-          gap: 2,
-          mb: 4,
-        }}
-      >
-        <Box>
-          <Typography
-            color="text.secondary"
-            sx={{ mt: 0.5 }}
-          >
-            Create and manage assignments for your
-            courses
-          </Typography>
-        </Box>
-
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleOpenCreate}
-          sx={{
-            borderRadius: 2,
-            textTransform: "none",
-            fontWeight: "bold",
-            px: 3,
-            py: 1.2,
-          }}
-        >
-          Create Assignment
-        </Button>
-      </Box>
-
-      {/* ================================================= */}
-      {/* SUCCESS */}
-      {/* ================================================= */}
-
-      {success && (
-        <Alert
-          severity="success"
-          sx={{ mb: 3 }}
-          onClose={() => setSuccess("")}
-        >
-          {success}
-        </Alert>
-      )}
-
-      {/* ================================================= */}
-      {/* ERROR */}
-      {/* ================================================= */}
-
-      {error && (
-        <Alert
-          severity="error"
-          sx={{ mb: 3 }}
-          onClose={() => setError("")}
-        >
-          {error}
-        </Alert>
-      )}
-
-      {/* ================================================= */}
-      {/* STATISTICS */}
-      {/* ================================================= */}
-
-      {!loading && (
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "1fr",
-              sm: "repeat(3, 1fr)",
-            },
-            gap: 2,
-            mb: 4,
-          }}
-        >
-          <Card
-            sx={{
-              borderRadius: 3,
-              boxShadow: 2,
-            }}
-          >
-            <CardContent>
-              <Typography
-                color="text.secondary"
-                variant="body2"
-              >
-                Total Assignments
-              </Typography>
-
-              <Typography
-                variant="h4"
-                fontWeight="bold"
-                sx={{ mt: 1 }}
-              >
-                {assignments.length}
-              </Typography>
-            </CardContent>
-          </Card>
-
-          <Card
-            sx={{
-              borderRadius: 3,
-              boxShadow: 2,
-            }}
-          >
-            <CardContent>
-              <Typography
-                color="text.secondary"
-                variant="body2"
-              >
-                Active Assignments
-              </Typography>
-
-              <Typography
-                variant="h4"
-                fontWeight="bold"
-                sx={{ mt: 1 }}
-              >
-                {
-                  assignments.filter(
-                    (item) =>
-                      !isOverdue(item.dueDate)
-                  ).length
-                }
-              </Typography>
-            </CardContent>
-          </Card>
-
-          <Card
-            sx={{
-              borderRadius: 3,
-              boxShadow: 2,
-            }}
-          >
-            <CardContent>
-              <Typography
-                color="text.secondary"
-                variant="body2"
-              >
-                Overdue
-              </Typography>
-
-              <Typography
-                variant="h4"
-                fontWeight="bold"
-                sx={{ mt: 1 }}
-              >
-                {
-                  assignments.filter((item) =>
-                    isOverdue(item.dueDate)
-                  ).length
-                }
-              </Typography>
-            </CardContent>
-          </Card>
-        </Box>
-      )}
-
-      {/* ================================================= */}
-      {/* LOADING */}
-      {/* ================================================= */}
-
-      {loading ? (
+      <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 3.5 }}>
+        {/* Header */}
         <Box
           sx={{
             display: "flex",
-            justifyContent: "center",
-            py: 10,
+            justifyContent: "space-between",
+            alignItems: { xs: "flex-start", sm: "center" },
+            flexDirection: { xs: "column", sm: "row" },
+            gap: 2,
           }}
         >
-          <CircularProgress />
-        </Box>
-      ) : assignments.length === 0 ? (
-
-        /* ================================================= */
-        /* EMPTY STATE */
-        /* ================================================= */
-
-        <Card
-          sx={{
-            borderRadius: 3,
-            boxShadow: 2,
-          }}
-        >
-          <CardContent
-            sx={{
-              textAlign: "center",
-              py: 8,
-            }}
-          >
-            <AssignmentIcon
-              sx={{
-                fontSize: 70,
-                color: "text.secondary",
-                mb: 2,
-              }}
-            />
-
-            <Typography
-              variant="h5"
-              fontWeight="bold"
-            >
-              No Assignments Yet
+          <Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Typography variant="h4" sx={{ fontWeight: 800 }}>
+                Coursework & Homework
+              </Typography>
+              <Chip
+                label={`${assignments.length} Total Assignments`}
+                size="small"
+                sx={{
+                  bgcolor: "rgba(99, 102, 241, 0.12)",
+                  color: "#818cf8",
+                  fontWeight: 700,
+                  fontSize: "0.72rem",
+                }}
+              />
+            </Box>
+            <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5 }}>
+              Create homework assignments, set submission deadlines, and evaluate student work.
             </Typography>
+          </Box>
 
-            <Typography
-              color="text.secondary"
-              sx={{
-                mt: 1,
-                mb: 3,
-              }}
-            >
-              Create your first assignment for
-              your students.
-            </Typography>
+          <Box sx={{ display: "flex", gap: 1.5 }}>
+            <Tooltip title="Refresh">
+              <IconButton
+                onClick={fetchAssignments}
+                disabled={loading}
+                sx={{
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  borderRadius: "8px",
+                  p: 1,
+                }}
+              >
+                <RefreshIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
 
             <Button
               variant="contained"
+              size="small"
               startIcon={<AddIcon />}
-              onClick={handleOpenCreate}
-              sx={{
-                textTransform: "none",
-                borderRadius: 2,
-              }}
+              onClick={handleOpenAdd}
+              disabled={courses.length === 0}
             >
               Create Assignment
             </Button>
-          </CardContent>
-        </Card>
-
-      ) : (
-
-        /* ================================================= */
-        /* ASSIGNMENT CARDS */
-        /* ================================================= */
-
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "1fr",
-              sm: "1fr 1fr",
-              lg: "repeat(3, 1fr)",
-            },
-            gap: 3,
-          }}
-        >
-          {assignments.map((assignment) => {
-            const overdue = isOverdue(
-              assignment.dueDate
-            );
-
-            return (
-              <Card
-                key={assignment._id}
-                sx={{
-                  borderRadius: 3,
-                  boxShadow: 2,
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  transition: "0.2s",
-
-                  "&:hover": {
-                    transform: "translateY(-3px)",
-                    boxShadow: 5,
-                  },
-                }}
-              >
-                <CardContent
-                  sx={{
-                    flexGrow: 1,
-                    p: 3,
-                  }}
-                >
-                  {/* TOP */}
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent:
-                        "space-between",
-                      alignItems: "flex-start",
-                      mb: 2,
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 2,
-                        bgcolor: "primary.main",
-                        color: "white",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <AssignmentIcon />
-                    </Box>
-
-                    <Box>
-                      <Tooltip title="Edit">
-                        <IconButton
-                          color="primary"
-                          onClick={() =>
-                            handleOpenEdit(
-                              assignment
-                            )
-                          }
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      </Tooltip>
-
-                      <Tooltip title="Delete">
-                        <IconButton
-                          color="error"
-                          disabled={
-                            deletingId ===
-                            assignment._id
-                          }
-                          onClick={() =>
-                            handleDelete(
-                              assignment._id
-                            )
-                          }
-                        >
-                          {deletingId ===
-                          assignment._id ? (
-                            <CircularProgress
-                              size={20}
-                            />
-                          ) : (
-                            <DeleteIcon />
-                          )}
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  </Box>
-
-                  {/* TITLE */}
-
-                  <Typography
-                    variant="h6"
-                    fontWeight="bold"
-                    sx={{
-                      mb: 1,
-                      display:
-                        "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient:
-                        "vertical",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {assignment.title}
-                  </Typography>
-
-                  {/* DESCRIPTION */}
-
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{
-                      mb: 2,
-                      minHeight: 42,
-                      display:
-                        "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient:
-                        "vertical",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {assignment.description}
-                  </Typography>
-
-                  <Divider sx={{ mb: 2 }} />
-
-                  {/* COURSE */}
-
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                      mb: 1.5,
-                    }}
-                  >
-                    <MenuBookIcon
-                      fontSize="small"
-                      color="primary"
-                    />
-
-                    <Typography
-                      variant="body2"
-                      fontWeight="medium"
-                    >
-                      {getCourseName(
-                        assignment.course
-                      )}
-                    </Typography>
-                  </Box>
-
-                  {/* DUE DATE */}
-
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                    }}
-                  >
-                    <CalendarMonthIcon
-                      fontSize="small"
-                      color={
-                        overdue
-                          ? "error"
-                          : "primary"
-                      }
-                    />
-
-                    <Typography
-                      variant="body2"
-                      color={
-                        overdue
-                          ? "error.main"
-                          : "text.secondary"
-                      }
-                    >
-                      Due:{" "}
-                      {formatDate(
-                        assignment.dueDate
-                      )}
-                    </Typography>
-                  </Box>
-
-                  {/* STATUS */}
-
-                  <Box sx={{ mt: 2 }}>
-                    <Chip
-                      size="small"
-                      label={
-                        overdue
-                          ? "Overdue"
-                          : "Active"
-                      }
-                      color={
-                        overdue
-                          ? "error"
-                          : "success"
-                      }
-                    />
-                  </Box>
-                </CardContent>
-              </Card>
-            );
-          })}
+          </Box>
         </Box>
-      )}
 
-      {/* ================================================= */}
-      {/* CREATE / EDIT DIALOG */}
-      {/* ================================================= */}
+        {/* Alerts */}
+        {success && (
+          <Alert severity="success" onClose={() => setSuccess("")}>
+            {success}
+          </Alert>
+        )}
+        {error && (
+          <Alert severity="error" onClose={() => setError("")}>
+            {error}
+          </Alert>
+        )}
 
-      <Dialog
-        open={openDialog}
-        onClose={handleCloseDialog}
-        fullWidth
-        maxWidth="sm"
-      >
-        {/* DIALOG TITLE */}
+        {/* Toolbar */}
+        <GlassCard sx={{ p: 2.5 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2 }}>
+            <TextField
+              size="small"
+              placeholder="Search assignments by title or course..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: "text.secondary", fontSize: 18 }} />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ width: { xs: "100%", sm: 340 } }}
+            />
 
-        <DialogTitle
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            fontWeight: "bold",
-          }}
+            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+              Showing {filteredAssignments.length} of {assignments.length} assignments
+            </Typography>
+          </Box>
+        </GlassCard>
+
+        {/* List */}
+        {loading ? (
+          <Grid container spacing={3}>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Grid item xs={12} sm={6} md={4} key={i}>
+                <GlassCard sx={{ p: 3 }}>
+                  <Skeleton width="50%" height={26} sx={{ mb: 1 }} />
+                  <Skeleton width="30%" height={18} sx={{ mb: 2 }} />
+                  <Skeleton height={60} />
+                </GlassCard>
+              </Grid>
+            ))}
+          </Grid>
+        ) : filteredAssignments.length === 0 ? (
+          <GlassCard
+            sx={{
+              textAlign: "center",
+              py: 8,
+              px: 3,
+              border: "1px dashed rgba(255, 255, 255, 0.15)",
+            }}
+          >
+            <AssignmentIcon sx={{ fontSize: 50, color: "text.secondary", mb: 1.5 }} />
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              No assignments published yet
+            </Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5, mb: 3 }}>
+              Select a course and dispatch your first assignment to students.
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleOpenAdd}
+              disabled={courses.length === 0}
+            >
+              Create Assignment
+            </Button>
+          </GlassCard>
+        ) : (
+          <Grid container spacing={3}>
+            {filteredAssignments.map((assignment) => {
+              const isOverdue =
+                assignment.dueDate && new Date(assignment.dueDate) < new Date();
+
+              return (
+                <Grid item xs={12} sm={6} md={4} key={assignment._id}>
+                  <GlassCard
+                    hover
+                    sx={{
+                      height: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      p: 3,
+                    }}
+                  >
+                    <Box>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 1.5 }}>
+                        <Chip
+                          label={assignment.course?.title || "Course Track"}
+                          size="small"
+                          sx={{
+                            bgcolor: "rgba(99, 102, 241, 0.08)",
+                            color: "#818cf8",
+                            fontWeight: 700,
+                            fontSize: "0.72rem",
+                            border: "1px solid rgba(99, 102, 241, 0.2)",
+                          }}
+                        />
+
+                        <Box sx={{ display: "flex", gap: 0.5 }}>
+                          <Tooltip title="Edit Assignment">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleOpenEdit(assignment)}
+                              sx={{ color: "#818cf8" }}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Delete Assignment">
+                            <IconButton
+                              size="small"
+                              onClick={() => setDeleteTarget(assignment)}
+                              sx={{ color: "#ef4444" }}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </Box>
+
+                      <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.3, mb: 1 }}>
+                        {assignment.title}
+                      </Typography>
+
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: "text.secondary",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          mb: 2,
+                        }}
+                      >
+                        {assignment.description || "Student assignment guidelines."}
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ pt: 2, borderTop: "1px solid rgba(255, 255, 255, 0.06)", display: "flex", alignItems: "center", gap: 1 }}>
+                      <CalendarMonthIcon sx={{ fontSize: 16, color: isOverdue ? "#ef4444" : "text.secondary" }} />
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: isOverdue ? "#ef4444" : "text.secondary",
+                          fontWeight: isOverdue ? 700 : 500,
+                        }}
+                      >
+                        Due:{" "}
+                        {assignment.dueDate
+                          ? new Date(assignment.dueDate).toLocaleDateString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })
+                          : "No deadline"}
+                      </Typography>
+                    </Box>
+                  </GlassCard>
+                </Grid>
+              );
+            })}
+          </Grid>
+        )}
+
+        {/* Add/Edit Modal */}
+        <Dialog
+          open={openDialog}
+          onClose={() => !saving && setOpenDialog(false)}
+          maxWidth="sm"
+          fullWidth
         >
-          {editingAssignment
-            ? "Edit Assignment"
-            : "Create New Assignment"}
+          <DialogTitle sx={{ fontWeight: 800 }}>
+            {editingAssignment ? "Edit Assignment" : "Create New Coursework"}
+          </DialogTitle>
+          <Box component="form" onSubmit={handleSave}>
+            <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: 1 }}>
+              <TextField
+                label="Assignment Title"
+                required
+                fullWidth
+                size="small"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              />
 
-          <IconButton
-            onClick={handleCloseDialog}
-            disabled={saving}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-
-        <DialogContent dividers>
-
-          {/* TITLE */}
-
-          <TextField
-            fullWidth
-            label="Assignment Title"
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
-            margin="normal"
-            required
-            placeholder="e.g. JavaScript Final Project"
-          />
-
-          {/* DESCRIPTION */}
-
-          <TextField
-            fullWidth
-            label="Description"
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            margin="normal"
-            multiline
-            rows={4}
-            required
-            placeholder="Write assignment instructions..."
-          />
-
-          {/* COURSE */}
-
-          <TextField
-            select
-            fullWidth
-            label="Select Course"
-            name="course"
-            value={formData.course}
-            onChange={handleChange}
-            margin="normal"
-            required
-            disabled={coursesLoading}
-          >
-            {courses.length === 0 ? (
-              <MenuItem disabled>
-                No courses available
-              </MenuItem>
-            ) : (
-              courses.map((course) => (
-                <MenuItem
-                  key={course._id}
-                  value={course._id}
+              <FormControl fullWidth size="small" required>
+                <InputLabel id="course-select-label">Target Course</InputLabel>
+                <Select
+                  labelId="course-select-label"
+                  label="Target Course"
+                  value={formData.course}
+                  onChange={(e) => setFormData({ ...formData, course: e.target.value })}
                 >
-                  {course.title}
-                </MenuItem>
-              ))
-            )}
-          </TextField>
+                  {courses.map((c) => (
+                    <MenuItem key={c._id} value={c._id}>
+                      {c.title}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
 
-          {/* DUE DATE */}
+              <TextField
+                label="Submission Deadline"
+                type="date"
+                required
+                fullWidth
+                size="small"
+                InputLabelProps={{ shrink: true }}
+                value={formData.dueDate}
+                onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+              />
 
-          <TextField
-            fullWidth
-            label="Due Date"
-            name="dueDate"
-            type="datetime-local"
-            value={formData.dueDate}
-            onChange={handleChange}
-            margin="normal"
-            required
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-        </DialogContent>
+              <TextField
+                label="Task Instructions & Guidelines"
+                multiline
+                minRows={4}
+                required
+                fullWidth
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              />
+            </DialogContent>
+            <DialogActions sx={{ px: 3, pb: 2.5 }}>
+              <Button onClick={() => setOpenDialog(false)} disabled={saving} variant="outlined" size="small">
+                Cancel
+              </Button>
+              <Button type="submit" variant="contained" disabled={saving} size="small">
+                {saving ? "Saving..." : editingAssignment ? "Update Assignment" : "Publish Assignment"}
+              </Button>
+            </DialogActions>
+          </Box>
+        </Dialog>
 
-        {/* ACTIONS */}
-
-        <DialogActions
-          sx={{
-            px: 3,
-            py: 2,
-          }}
-        >
-          <Button
-            onClick={handleCloseDialog}
-            disabled={saving}
-            sx={{
-              textTransform: "none",
-            }}
-          >
-            Cancel
-          </Button>
-
-          <Button
-            variant="contained"
-            onClick={handleSaveAssignment}
-            disabled={
-              saving ||
-              !formData.title.trim() ||
-              !formData.description.trim() ||
-              !formData.course ||
-              !formData.dueDate
-            }
-            sx={{
-              minWidth: 150,
-              textTransform: "none",
-              fontWeight: "bold",
-            }}
-          >
-            {saving ? (
-              <>
-                <CircularProgress
-                  size={20}
-                  color="inherit"
-                  sx={{ mr: 1 }}
-                />
-
-                Saving...
-              </>
-            ) : editingAssignment ? (
-              "Update Assignment"
-            ) : (
-              "Create Assignment"
-            )}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        {/* Delete Confirm */}
+        <ConfirmDialog
+          open={Boolean(deleteTarget)}
+          title="Delete Coursework Assignment"
+          message={`Are you sure you want to delete "${deleteTarget?.title}"? All student solutions delivered for this assignment will also be removed.`}
+          confirmText="Delete Assignment"
+          loading={deleting}
+          onConfirm={handleDeleteConfirm}
+          onClose={() => setDeleteTarget(null)}
+        />
+      </Box>
     </Layout>
   );
 }
-
-export default Assignment;

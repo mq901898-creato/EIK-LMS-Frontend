@@ -1,19 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
-  CircularProgress,
+  Grid,
   Alert,
   Button,
-  Avatar,
-  Chip,
-  Divider,
   IconButton,
   Tooltip,
+  LinearProgress,
 } from "@mui/material";
 
 import MenuBookIcon from "@mui/icons-material/MenuBook";
@@ -21,16 +16,17 @@ import AssignmentIcon from "@mui/icons-material/Assignment";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import AddIcon from "@mui/icons-material/Add";
-import PeopleIcon from "@mui/icons-material/People";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import LogoutIcon from "@mui/icons-material/Logout";
-import SchoolIcon from "@mui/icons-material/School";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import HowToRegIcon from "@mui/icons-material/HowToReg";
 
 import Layout from "../../components/layout/Layout";
+import StatCard from "../../components/common/StatCard";
+import GlassCard from "../../components/common/GlassCard";
 import api from "../../servises/api";
 
-function Dashboard() {
+function TeacherDashboard() {
   const navigate = useNavigate();
 
   const [dashboardData, setDashboardData] = useState(null);
@@ -38,36 +34,8 @@ function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
-  // =========================================================
-  // GET USER
-  // =========================================================
-
-  const getUser = () => {
-    try {
-      const storedUser = localStorage.getItem("user");
-
-      if (!storedUser) {
-        return null;
-      }
-
-      return JSON.parse(storedUser);
-    } catch (error) {
-      console.error("User parsing error:", error);
-      return null;
-    }
-  };
-
-  const user = getUser();
-
-  const teacherName =
-    user?.name ||
-    user?.fullName ||
-    user?.username ||
-    "Teacher";
-
-  // =========================================================
-  // FETCH DASHBOARD
-  // =========================================================
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const teacherName = user?.name || user?.username || "Professor";
 
   const fetchDashboard = useCallback(async (isRefresh = false) => {
     try {
@@ -76,27 +44,9 @@ function Dashboard() {
       } else {
         setLoading(true);
       }
-
       setError("");
 
       const response = await api.get("/teacher/dashboard");
-
-      console.log("Teacher Dashboard:", response.data);
-
-      /*
-        Your backend currently returns:
-
-        response.data.data
-
-        Example:
-        {
-          courses: 5,
-          submissions: 20,
-          pending: 8,
-          reviewed: 12
-        }
-      */
-
       const data = response.data?.data || response.data || {};
 
       setDashboardData({
@@ -105,20 +55,18 @@ function Dashboard() {
         pending: Number(data.pending) || 0,
         reviewed: Number(data.reviewed) || 0,
       });
-    } catch (error) {
-      console.error("Teacher dashboard error:", error);
+    } catch (err) {
+      console.error("Teacher dashboard error:", err);
 
-      if (error.response?.status === 401) {
+      if (err.response?.status === 401) {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
-
         navigate("/login");
         return;
       }
 
       setError(
-        error.response?.data?.message ||
-          "Failed to load teacher dashboard"
+        err.response?.data?.message || "Failed to load faculty metrics."
       );
     } finally {
       setLoading(false);
@@ -130,203 +78,97 @@ function Dashboard() {
     fetchDashboard();
   }, [fetchDashboard]);
 
-  // =========================================================
-  // LOGOUT
-  // =========================================================
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-
-    navigate("/login");
-  };
-
-  // =========================================================
-  // QUICK NAVIGATION
-  // =========================================================
-
-  const handleCourses = () => {
-    navigate("/teacher/courses");
-  };
-
-  const handleAssignments = () => {
-    navigate("/teacher/assignments");
-  };
-
-  const handleStudents = () => {
-    navigate("/teacher/students");
-  };
-
-  // =========================================================
-  // STATISTICS
-  // =========================================================
-
-  const stats = [
-    {
-      title: "My Courses",
-      value: dashboardData?.courses || 0,
-      icon: <MenuBookIcon />,
-      iconBg: "#e3f2fd",
-      iconColor: "#1976d2",
-      description: "Courses you created",
-      action: handleCourses,
-    },
-    {
-      title: "Total Submissions",
-      value: dashboardData?.submissions || 0,
-      icon: <AssignmentIcon />,
-      iconBg: "#f3e5f5",
-      iconColor: "#9c27b0",
-      description: "Student submissions",
-      action: handleAssignments,
-    },
-    {
-      title: "Pending Review",
-      value: dashboardData?.pending || 0,
-      icon: <PendingActionsIcon />,
-      iconBg: "#fff3e0",
-      iconColor: "#ed6c02",
-      description: "Need your attention",
-      action: handleAssignments,
-    },
-    {
-      title: "Reviewed",
-      value: dashboardData?.reviewed || 0,
-      icon: <CheckCircleIcon />,
-      iconBg: "#e8f5e9",
-      iconColor: "#2e7d32",
-      description: "Completed reviews",
-      action: handleAssignments,
-    },
-  ];
-
-  // =========================================================
-  // REVIEW PERCENTAGE
-  // =========================================================
-
   const totalSubmissions = dashboardData?.submissions || 0;
   const reviewedSubmissions = dashboardData?.reviewed || 0;
-
   const reviewPercentage =
     totalSubmissions > 0
-      ? Math.round(
-          (reviewedSubmissions / totalSubmissions) * 100
-        )
-      : 0;
-
-  // =========================================================
-  // UI
-  // =========================================================
+      ? Math.round((reviewedSubmissions / totalSubmissions) * 100)
+      : 100;
 
   return (
     <Layout>
-      <Box sx={{ width: "100%" }}>
-
-        {/* ================================================= */}
-        {/* HEADER */}
-        {/* ================================================= */}
-
+      <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 3.5 }}>
+        {/* Welcome Header */}
         <Box
           sx={{
             display: "flex",
             justifyContent: "space-between",
-            alignItems: {
-              xs: "flex-start",
-              md: "center",
-            },
-            flexDirection: {
-              xs: "column",
-              md: "row",
-            },
+            alignItems: { xs: "flex-start", sm: "center" },
+            flexDirection: { xs: "column", sm: "row" },
             gap: 2,
-            mb: 4,
           }}
         >
           <Box>
             <Typography
-              variant="body1"
-              color="text.secondary"
+              variant="h4"
+              sx={{
+                fontWeight: 800,
+                letterSpacing: "-0.02em",
+                lineHeight: 1.2,
+                mb: 0.5,
+              }}
             >
-              Here's what's happening with your teaching
-              activities today.
+              Faculty Workspace
+            </Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
+              Welcome back, {teacherName}. Here is your active teaching summary and pending student coursework.
             </Typography>
           </Box>
 
-          <Box
-            sx={{
-              display: "flex",
-              gap: 1.5,
-              alignItems: "center",
-            }}
-          >
-            <Tooltip title="Refresh dashboard">
+          {/* Action Toolbar */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
+            <Tooltip title="Refresh">
               <span>
                 <IconButton
                   onClick={() => fetchDashboard(true)}
                   disabled={loading || refreshing}
                   sx={{
-                    border: "1px solid",
-                    borderColor: "divider",
-                    bgcolor: "background.paper",
+                    border: "1px solid rgba(255, 255, 255, 0.12)",
+                    borderRadius: "8px",
+                    p: 1,
                   }}
                 >
-                  {refreshing ? (
-                    <CircularProgress size={20} />
-                  ) : (
-                    <RefreshIcon />
-                  )}
+                  <RefreshIcon
+                    fontSize="small"
+                    sx={{
+                      animation: refreshing ? "spin 1s linear infinite" : "none",
+                      "@keyframes spin": {
+                        "0%": { transform: "rotate(0deg)" },
+                        "100%": { transform: "rotate(360deg)" },
+                      },
+                    }}
+                  />
                 </IconButton>
               </span>
             </Tooltip>
 
             <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={handleCourses}
-              sx={{
-                borderRadius: 2,
-                textTransform: "none",
-                fontWeight: 700,
-                px: 2.5,
-              }}
+              variant="outlined"
+              size="small"
+              startIcon={<AutoAwesomeIcon />}
+              onClick={() => navigate("/teacher/quizzes/create")}
+              sx={{ borderColor: "rgba(99, 102, 241, 0.4)", color: "#818cf8" }}
             >
-              Create Course
+              AI Quiz Studio
             </Button>
 
             <Button
-              variant="outlined"
-              color="error"
-              startIcon={<LogoutIcon />}
-              onClick={handleLogout}
-              sx={{
-                borderRadius: 2,
-                textTransform: "none",
-                fontWeight: 700,
-              }}
+              variant="contained"
+              size="small"
+              startIcon={<AddIcon />}
+              onClick={() => navigate("/teacher/courses")}
             >
-              Logout
+              Add Course
             </Button>
           </Box>
         </Box>
 
-        {/* ================================================= */}
-        {/* ERROR */}
-        {/* ================================================= */}
-
+        {/* Error Alert with Retry */}
         {error && (
           <Alert
             severity="error"
-            sx={{
-              mb: 3,
-              borderRadius: 2,
-            }}
-            onClose={() => setError("")}
             action={
-              <Button
-                color="inherit"
-                size="small"
-                onClick={() => fetchDashboard()}
-              >
+              <Button color="inherit" size="small" onClick={() => fetchDashboard()}>
                 Retry
               </Button>
             }
@@ -335,506 +177,178 @@ function Dashboard() {
           </Alert>
         )}
 
-        {/* ================================================= */}
-        {/* STATISTICS */}
-        {/* ================================================= */}
+        {/* Core Metric Cards */}
+        <Grid container spacing={2.5}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Box onClick={() => navigate("/teacher/courses")} sx={{ cursor: "pointer", height: "100%" }}>
+              <StatCard
+                title="Active Courses"
+                value={dashboardData?.courses}
+                icon={MenuBookIcon}
+                color="#6366f1"
+                loading={loading}
+                trendLabel="Instructed by you"
+              />
+            </Box>
+          </Grid>
 
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "1fr",
-              sm: "1fr 1fr",
-              lg: "repeat(4, 1fr)",
-            },
-            gap: 3,
-            mb: 4,
-          }}
-        >
-          {stats.map((stat) => (
-            <Card
-              key={stat.title}
-              onClick={stat.action}
-              sx={{
-                borderRadius: 3,
-                boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
-                border: "1px solid",
-                borderColor: "divider",
-                cursor: "pointer",
-                transition: "all 0.25s ease",
+          <Grid item xs={12} sm={6} md={3}>
+            <Box onClick={() => navigate("/teacher/submissions")} sx={{ cursor: "pointer", height: "100%" }}>
+              <StatCard
+                title="Total Submissions"
+                value={dashboardData?.submissions}
+                icon={AssignmentIcon}
+                color="#06b6d4"
+                loading={loading}
+                trendLabel="All coursework received"
+              />
+            </Box>
+          </Grid>
 
-                "&:hover": {
-                  transform: "translateY(-4px)",
-                  boxShadow:
-                    "0 8px 28px rgba(0,0,0,0.10)",
-                },
-              }}
-            >
-              <CardContent sx={{ p: 3 }}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                  }}
-                >
-                  <Box>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{
-                        fontWeight: 600,
-                        mb: 1,
-                      }}
-                    >
-                      {stat.title}
-                    </Typography>
+          <Grid item xs={12} sm={6} md={3}>
+            <Box onClick={() => navigate("/teacher/submissions")} sx={{ cursor: "pointer", height: "100%" }}>
+              <StatCard
+                title="Pending Review"
+                value={dashboardData?.pending}
+                icon={PendingActionsIcon}
+                color="#f59e0b"
+                loading={loading}
+                trendLabel="Awaiting grading"
+              />
+            </Box>
+          </Grid>
 
-                    {loading ? (
-                      <CircularProgress size={30} />
-                    ) : (
-                      <Typography
-                        variant="h3"
-                        sx={{
-                          fontWeight: 800,
-                          lineHeight: 1,
-                        }}
-                      >
-                        {stat.value}
-                      </Typography>
-                    )}
-                  </Box>
+          <Grid item xs={12} sm={6} md={3}>
+            <Box onClick={() => navigate("/teacher/submissions")} sx={{ cursor: "pointer", height: "100%" }}>
+              <StatCard
+                title="Reviewed"
+                value={dashboardData?.reviewed}
+                icon={CheckCircleIcon}
+                color="#10b981"
+                loading={loading}
+                trendLabel="Graded & completed"
+              />
+            </Box>
+          </Grid>
+        </Grid>
 
-                  <Avatar
-                    sx={{
-                      width: 52,
-                      height: 52,
-                      bgcolor: stat.iconBg,
-                      color: stat.iconColor,
-                    }}
-                  >
-                    {stat.icon}
-                  </Avatar>
-                </Box>
-
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mt: 2 }}
-                >
-                  {stat.description}
+        {/* Grading Velocity & Workflow Modules */}
+        <Grid container spacing={2.5}>
+          {/* Grading Progress Card */}
+          <Grid item xs={12} md={6}>
+            <GlassCard sx={{ p: 3, height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
+                  Assessment Review Velocity
                 </Typography>
-              </CardContent>
-            </Card>
-          ))}
-        </Box>
+                <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mb: 3 }}>
+                  Percentage of student submissions evaluated across all active terms.
+                </Typography>
 
-        {/* ================================================= */}
-        {/* MAIN CONTENT */}
-        {/* ================================================= */}
-
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "1fr",
-              md: "1.4fr 1fr",
-            },
-            gap: 3,
-          }}
-        >
-
-          {/* ================================================= */}
-          {/* SUBMISSION OVERVIEW */}
-          {/* ================================================= */}
-
-          <Card
-            sx={{
-              borderRadius: 3,
-              boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
-              border: "1px solid",
-              borderColor: "divider",
-            }}
-          >
-            <CardContent sx={{ p: 3 }}>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mb: 3,
-                }}
-              >
-                <Box>
-                  <Typography
-                    variant="h6"
-                    fontWeight={800}
-                  >
-                    Submission Overview
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", mb: 1 }}>
+                  <Typography variant="h4" sx={{ fontWeight: 800, color: "#6366f1" }}>
+                    {reviewPercentage}%
                   </Typography>
-
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                  >
-                    Track your students' submissions
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                    {reviewedSubmissions} of {totalSubmissions} completed
                   </Typography>
                 </Box>
 
-                <Chip
-                  icon={<AssignmentIcon />}
-                  label={`${reviewPercentage}% Reviewed`}
-                  color={
-                    reviewPercentage === 100
-                      ? "success"
-                      : "primary"
-                  }
-                  variant="outlined"
+                <LinearProgress
+                  variant="determinate"
+                  value={reviewPercentage}
+                  sx={{
+                    height: 8,
+                    borderRadius: 4,
+                    bgcolor: "rgba(255, 255, 255, 0.08)",
+                    "& .MuiLinearProgress-bar": {
+                      bgcolor: "#6366f1",
+                      borderRadius: 4,
+                    },
+                  }}
                 />
               </Box>
 
-              {/* Progress */}
-              <Box sx={{ mb: 3 }}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    mb: 1,
-                  }}
+              <Box sx={{ pt: 3, display: "flex", gap: 1.5 }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  endIcon={<ArrowForwardIcon />}
+                  onClick={() => navigate("/teacher/submissions")}
                 >
-                  <Typography
-                    variant="body2"
-                    fontWeight={600}
-                  >
-                    Review Progress
-                  </Typography>
+                  Review Pending Submissions
+                </Button>
+              </Box>
+            </GlassCard>
+          </Grid>
 
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                  >
-                    {reviewedSubmissions}/
-                    {totalSubmissions}
-                  </Typography>
-                </Box>
-
-                <Box
-                  sx={{
-                    width: "100%",
-                    height: 10,
-                    bgcolor: "grey.200",
-                    borderRadius: 10,
-                    overflow: "hidden",
-                  }}
-                >
+          {/* AI Quiz Studio Highlight */}
+          <Grid item xs={12} md={6}>
+            <GlassCard
+              hover
+              gradientBorder
+              sx={{
+                p: 3,
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                bgcolor: "rgba(99, 102, 241, 0.04)",
+              }}
+            >
+              <Box>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1.5 }}>
                   <Box
                     sx={{
-                      width: `${reviewPercentage}%`,
-                      height: "100%",
-                      bgcolor:
-                        reviewPercentage === 100
-                          ? "success.main"
-                          : "primary.main",
-                      borderRadius: 10,
-                      transition: "width 0.5s ease",
-                    }}
-                  />
-                </Box>
-              </Box>
-
-              <Divider sx={{ mb: 2 }} />
-
-              {/* Pending */}
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  py: 1.5,
-                }}
-              >
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1.5,
-                  }}
-                >
-                  <Avatar
-                    sx={{
-                      width: 38,
-                      height: 38,
-                      bgcolor: "#fff3e0",
-                      color: "#ed6c02",
+                      width: 40,
+                      height: 40,
+                      borderRadius: "10px",
+                      bgcolor: "rgba(99, 102, 241, 0.15)",
+                      border: "1px solid rgba(99, 102, 241, 0.35)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#818cf8",
                     }}
                   >
-                    <PendingActionsIcon fontSize="small" />
-                  </Avatar>
-
+                    <AutoAwesomeIcon fontSize="small" />
+                  </Box>
                   <Box>
-                    <Typography fontWeight={600}>
-                      Pending Reviews
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                      AI Assessment Studio
                     </Typography>
-
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                    >
-                      Submissions waiting for review
+                    <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                      Instant question generation powered by Gemini
                     </Typography>
                   </Box>
                 </Box>
 
-                <Typography
-                  variant="h6"
-                  fontWeight={800}
-                >
-                  {loading ? "—" : dashboardData?.pending || 0}
+                <Typography variant="body2" sx={{ color: "text.secondary", mt: 1 }}>
+                  Create intelligent quizzes, multiple choice questions, and auto-graded assessments
+                  from lecture transcripts or topic summaries in seconds.
                 </Typography>
               </Box>
 
-              {/* Reviewed */}
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  py: 1.5,
-                }}
-              >
-                <Box
+              <Box sx={{ pt: 3 }}>
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<AutoAwesomeIcon />}
+                  onClick={() => navigate("/teacher/quizzes/create")}
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1.5,
+                    bgcolor: "#6366f1",
+                    "&:hover": { bgcolor: "#4f46e5" },
                   }}
                 >
-                  <Avatar
-                    sx={{
-                      width: 38,
-                      height: 38,
-                      bgcolor: "#e8f5e9",
-                      color: "#2e7d32",
-                    }}
-                  >
-                    <CheckCircleIcon fontSize="small" />
-                  </Avatar>
-
-                  <Box>
-                    <Typography fontWeight={600}>
-                      Reviewed
-                    </Typography>
-
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                    >
-                      Successfully reviewed submissions
-                    </Typography>
-                  </Box>
-                </Box>
-
-                <Typography
-                  variant="h6"
-                  fontWeight={800}
-                >
-                  {loading ? "—" : dashboardData?.reviewed || 0}
-                </Typography>
+                  Open Quiz Studio
+                </Button>
               </Box>
-
-              <Button
-                fullWidth
-                variant="outlined"
-                endIcon={<ArrowForwardIcon />}
-                onClick={handleAssignments}
-                sx={{
-                  mt: 2,
-                  borderRadius: 2,
-                  textTransform: "none",
-                  fontWeight: 700,
-                }}
-              >
-                Manage Assignments
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* ================================================= */}
-          {/* QUICK ACTIONS */}
-          {/* ================================================= */}
-
-          <Card
-            sx={{
-              borderRadius: 3,
-              boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
-              border: "1px solid",
-              borderColor: "divider",
-            }}
-          >
-            <CardContent sx={{ p: 3 }}>
-              <Typography
-                variant="h6"
-                fontWeight={800}
-              >
-                Quick Actions
-              </Typography>
-
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mb: 3 }}
-              >
-                Quickly access your teaching tools
-              </Typography>
-
-              {/* Create Course */}
-              <Button
-                fullWidth
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={handleCourses}
-                sx={{
-                  justifyContent: "flex-start",
-                  py: 1.5,
-                  px: 2,
-                  mb: 1.5,
-                  borderRadius: 2,
-                  textTransform: "none",
-                  fontWeight: 700,
-                }}
-              >
-                Create New Course
-              </Button>
-
-              {/* Manage Courses */}
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<MenuBookIcon />}
-                endIcon={<ArrowForwardIcon />}
-                onClick={handleCourses}
-                sx={{
-                  justifyContent: "space-between",
-                  py: 1.5,
-                  px: 2,
-                  mb: 1.5,
-                  borderRadius: 2,
-                  textTransform: "none",
-                  fontWeight: 600,
-                }}
-              >
-                Manage My Courses
-              </Button>
-
-              {/* Assignments */}
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<AssignmentIcon />}
-                endIcon={<ArrowForwardIcon />}
-                onClick={handleAssignments}
-                sx={{
-                  justifyContent: "space-between",
-                  py: 1.5,
-                  px: 2,
-                  mb: 1.5,
-                  borderRadius: 2,
-                  textTransform: "none",
-                  fontWeight: 600,
-                }}
-              >
-                Manage Assignments
-              </Button>
-
-              {/* Students */}
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<PeopleIcon />}
-                endIcon={<ArrowForwardIcon />}
-                onClick={handleStudents}
-                sx={{
-                  justifyContent: "space-between",
-                  py: 1.5,
-                  px: 2,
-                  borderRadius: 2,
-                  textTransform: "none",
-                  fontWeight: 600,
-                }}
-              >
-                View Students
-              </Button>
-            </CardContent>
-          </Card>
-        </Box>
-
-        {/* ================================================= */}
-        {/* BOTTOM WELCOME CARD */}
-        {/* ================================================= */}
-
-        <Card
-          sx={{
-            mt: 3,
-            borderRadius: 3,
-            overflow: "hidden",
-            background:
-              "linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)",
-            color: "white",
-            boxShadow:
-              "0 8px 30px rgba(25,118,210,0.25)",
-          }}
-        >
-          <CardContent
-            sx={{
-              p: {
-                xs: 3,
-                md: 4,
-              },
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 3,
-              flexDirection: {
-                xs: "column",
-                sm: "row",
-              },
-            }}
-          >
-            <Box>
-              <Typography
-                variant="h5"
-                fontWeight={800}
-                sx={{ mb: 1 }}
-              >
-                Keep inspiring your students! 🎓
-              </Typography>
-
-              <Typography
-                sx={{
-                  opacity: 0.9,
-                  maxWidth: 650,
-                }}
-              >
-                Create engaging courses, review student
-                submissions, and help your students achieve
-                their learning goals.
-              </Typography>
-            </Box>
-
-            <SchoolIcon
-              sx={{
-                fontSize: {
-                  xs: 60,
-                  md: 90,
-                },
-                opacity: 0.25,
-              }}
-            />
-          </CardContent>
-        </Card>
+            </GlassCard>
+          </Grid>
+        </Grid>
       </Box>
     </Layout>
   );
 }
 
-export default Dashboard;
+export default TeacherDashboard;

@@ -27,6 +27,7 @@ const AddCourse = lazy(() => import("./pages/admin/AddCourse"));
 const AdminAssignments = lazy(() => import("./pages/admin/Assignmnets"));
 const UpdateAssignment = lazy(() => import("./pages/admin/UpdateAssighment"));
 const Settings = lazy(() => import("./pages/admin/Setting"));
+const AdminWhatsApp = lazy(() => import("./pages/admin/WhatsApp"));
 
 // =========================
 // TEACHER PAGES
@@ -203,6 +204,15 @@ function App() {
           }
         />
 
+        <Route
+          path="/admin/whatsapp"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <AdminWhatsApp />
+            </ProtectedRoute>
+          }
+        />
+
 
         {/* ================================================= */}
         {/* TEACHER PANEL */}
@@ -318,9 +328,9 @@ function App() {
             </ProtectedRoute>
           }
         />
-      //=========================
-        // QUIZ PAGES
-        //=========================
+        {/* ========================= */}
+        {/* QUIZ PAGES */}
+        {/* ========================= */}
         <Route
           path="/teacher/quizzes/create"
           element={

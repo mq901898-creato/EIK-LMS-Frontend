@@ -2,45 +2,51 @@ import PeopleIcon from "@mui/icons-material/People";
 import SchoolIcon from "@mui/icons-material/School";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import AssignmentIcon from "@mui/icons-material/Assignment";
-import Enrollment from "@mui/icons-material/HowToReg";
-import submisson from"@mui/icons-material/Send";
+import HowToRegIcon from "@mui/icons-material/HowToReg";
+import SendIcon from "@mui/icons-material/Send";
 
 const dashboardCards = [
   {
-    title: "Students",
+    title: "Total Students",
     key: "students",
-    icon:  PeopleIcon,
-    color: "#1565c0",
+    icon: PeopleIcon,
+    color: "#6366f1",
+    path: "/admin/students",
   },
   {
-    title: "Teachers",
+    title: "Faculty Members",
     key: "teachers",
-    icon:  PeopleIcon,
-    color: "#2e7d32",
+    icon: SchoolIcon,
+    color: "#10b981",
+    path: "/admin/teachers",
   },
   {
-    title: "Courses",
+    title: "Active Courses",
     key: "courses",
     icon: MenuBookIcon,
-    color: "#ed6c02",
+    color: "#06b6d4",
+    path: "/admin/courses",
   },
   {
     title: "Assignments",
     key: "assignments",
     icon: AssignmentIcon,
-    color: "#9c27b0",
+    color: "#f59e0b",
+    path: "/admin/assignments",
   },
   {
-    title: "Enrollments",
+    title: "Enrollment Requests",
     key: "enrollments",
-    icon: Enrollment,
-    color: "#0288d1",
+    icon: HowToRegIcon,
+    color: "#a855f7",
+    path: "/admin/courses",
   },
   {
     title: "Submissions",
     key: "submissions",
-    icon: submisson,
-    color: "#d32f2f",
+    icon: SendIcon,
+    color: "#ec4899",
+    path: "/admin/assignments",
   },
 ];
 

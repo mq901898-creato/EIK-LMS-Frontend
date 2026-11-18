@@ -1,20 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-
 import {
   Alert,
   Avatar,
   Box,
   Button,
-  Card,
-  CardContent,
   CardMedia,
   Chip,
-  CircularProgress,
   Grid,
   LinearProgress,
   Typography,
-  useTheme,
+  CardContent,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
 
 import MenuBookIcon from "@mui/icons-material/MenuBook";
@@ -27,127 +25,81 @@ import SchoolIcon from "@mui/icons-material/School";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import AutoStoriesIcon from "@mui/icons-material/AutoStories";
 import TaskAltIcon from "@mui/icons-material/TaskAlt";
+import RefreshIcon from "@mui/icons-material/Refresh";
 
-import StudentLayout from "../components/student/StudentLayout";
+import Layout from "../../components/layout/Layout";
+import StatCard from "../../components/common/StatCard";
+import GlassCard from "../../components/common/GlassCard";
 import api from "../../servises/api";
 
-function Dashboard() {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
+function StudentDashboard() {
   const navigate = useNavigate();
 
   const [dashboardData, setDashboardData] = useState(null);
   const [myCourses, setMyCourses] = useState([]);
-
   const [loading, setLoading] = useState(true);
   const [coursesLoading, setCoursesLoading] = useState(true);
-
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [coursesError, setCoursesError] = useState("");
-
   const [user, setUser] = useState({});
 
-  useEffect(() => {
+  const loadData = useCallback(async (isRefresh = false) => {
     try {
-      const savedUser = JSON.parse(
-        localStorage.getItem("user") || "{}"
-      );
-      setUser(savedUser);
-    } catch {
-      setUser({});
-    }
-
-    const getDashboard = async () => {
-      try {
-        const response = await api.get("/student/dashboard");
-        if (response.data?.success === false) {
-          throw new Error(
-            response.data.message || "Failed to load dashboard"
-          );
-        }
-        setDashboardData(response.data?.data || {});
-      } catch (err) {
-        setError(
-          err.response?.data?.message ||
-            err.message ||
-            "Failed to load dashboard"
-        );
-      } finally {
-        setLoading(false);
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+        setCoursesLoading(true);
       }
-    };
+      setError("");
+      setCoursesError("");
 
-    const getMyCourses = async () => {
-      try {
-        const savedUser = JSON.parse(
-          localStorage.getItem("user") || "{}"
-        );
-        if (!savedUser.id) {
-          throw new Error("Student ID not found. Please log in again.");
-        }
-        const response = await api.get(`/student/Courses/${savedUser.id}`);
-        if (response.data?.success === false) {
-          throw new Error(
-            response.data.message || "Failed to load courses"
-          );
-        }
+      const savedUser = JSON.parse(localStorage.getItem("user") || "{}");
+      setUser(savedUser);
+
+      // Fetch dashboard counts
+      const dashboardPromise = api.get("/student/dashboard");
+
+      // Fetch enrolled courses if user.id is available
+      const coursesPromise = savedUser.id
+        ? api.get(`/student/Courses/${savedUser.id}`)
+        : Promise.resolve({ data: { enrollments: [] } });
+
+      const [dashRes, coursesRes] = await Promise.allSettled([
+        dashboardPromise,
+        coursesPromise,
+      ]);
+
+      if (dashRes.status === "fulfilled") {
+        setDashboardData(dashRes.value.data?.data || {});
+      } else {
+        setError(dashRes.reason?.response?.data?.message || "Failed to load dashboard metrics");
+      }
+
+      if (coursesRes.status === "fulfilled") {
         setMyCourses(
-          Array.isArray(response.data?.enrollments)
-            ? response.data.enrollments
+          Array.isArray(coursesRes.value.data?.enrollments)
+            ? coursesRes.value.data.enrollments
             : []
         );
-      } catch (err) {
+      } else {
         setCoursesError(
-          err.response?.data?.message ||
-            err.message ||
-            "Failed to load enrolled courses"
+          coursesRes.reason?.response?.data?.message || "Failed to load enrolled courses"
         );
-      } finally {
-        setCoursesLoading(false);
       }
-    };
-
-    getDashboard();
-    getMyCourses();
+    } catch (err) {
+      console.error("Error loading student dashboard:", err);
+    } finally {
+      setLoading(false);
+      setCoursesLoading(false);
+      setRefreshing(false);
+    }
   }, []);
 
-  const cards = [
-    {
-      title: "My Courses",
-      value: dashboardData?.courses ?? myCourses.length,
-      icon: MenuBookIcon,
-      color: "#2563eb",
-      background: "#dbeafe",
-    },
-    {
-      title: "Assignments",
-      value: dashboardData?.assignments ?? 0,
-      icon: AssignmentIcon,
-      color: "#7c3aed",
-      background: "#ede9fe",
-    },
-    {
-      title: "Submitted",
-      value: dashboardData?.submitted ?? 0,
-      icon: UploadFileIcon,
-      color: "#0f766e",
-      background: "#ccfbf1",
-    },
-    {
-      title: "Pending",
-      value: dashboardData?.pending ?? 0,
-      icon: PendingActionsIcon,
-      color: "#c2410c",
-      background: "#ffedd5",
-    },
-    {
-      title: "Reviewed",
-      value: dashboardData?.reviewed ?? 0,
-      icon: CheckCircleIcon,
-      color: "#15803d",
-      background: "#dcfce7",
-    },
-  ];
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const validCourses = myCourses.filter((item) => item.course);
 
@@ -171,152 +123,168 @@ function Dashboard() {
     return 0;
   };
 
-  // Overall average real progress calculation across all valid courses
-  const overallRealProgress = validCourses.length > 0
-    ? Math.round(validCourses.reduce((acc, curr) => acc + calculateRealProgress(curr), 0) / validCourses.length)
-    : 0;
+  const overallRealProgress =
+    validCourses.length > 0
+      ? Math.round(
+          validCourses.reduce((acc, curr) => acc + calculateRealProgress(curr), 0) /
+            validCourses.length
+        )
+      : 0;
 
   return (
-    <StudentLayout>
-      <Box
-        sx={{
-          p: 0,
-          maxWidth: 1600,
-          mx: "auto",
-        }}
-      >
-        {/* Modern Profile Header with Real Stats Chips */}
-        <Box
+    <Layout>
+      <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 3.5 }}>
+        {/* Profile Banner */}
+        <GlassCard
           sx={{
+            p: 3,
             display: "flex",
             justifyContent: "space-between",
             alignItems: { xs: "flex-start", sm: "center" },
             flexDirection: { xs: "column", sm: "row" },
             gap: 2,
-            mb: 4,
-            p: 3.5,
-            borderRadius: 4,
-            bgcolor: isDark ? "background.paper" : "#ffffff",
-            border: `1px solid ${isDark ? theme.palette.divider : "#e2e8f0"}`,
-            boxShadow: "0 4px 20px rgba(15, 23, 42, 0.04)",
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2.5 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Avatar
               sx={{
-                width: 60,
-                height: 60,
-                bgcolor: "#2563eb",
+                width: 54,
+                height: 54,
+                bgcolor: "#6366f1",
                 fontWeight: 800,
-                fontSize: "1.4rem",
-                boxShadow: "0 4px 12px rgba(37, 99, 235, 0.2)",
+                fontSize: "1.3rem",
+                boxShadow: "0 0 16px rgba(99, 102, 241, 0.35)",
               }}
             >
               {user.name ? user.name.charAt(0).toUpperCase() : "S"}
             </Avatar>
             <Box>
-              <Typography variant="h5" fontWeight={800} color={isDark ? "text.primary" : "#0f172a"}>
+              <Typography variant="h5" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
                 Welcome back, {user.name || "Student"}
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                Here is a snapshot of your courses and academic progress.
+              <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5 }}>
+                Track your syllabus milestones, upcoming deadlines, and course certifications.
               </Typography>
             </Box>
           </Box>
 
-          <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
             <Chip
-              icon={<TaskAltIcon sx={{ color: "#2563eb !important" }} />}
-              label={`Average course progress: ${overallRealProgress}%`}
-              sx={{ fontWeight: 700, bgcolor: "#eff6ff", color: "#1d4ed8", border: "1px solid #dbeafe" }}
+              icon={<TaskAltIcon sx={{ color: "#10b981 !important" }} />}
+              label={`Average Progress: ${overallRealProgress}%`}
+              sx={{
+                fontWeight: 700,
+                bgcolor: "rgba(16, 185, 129, 0.12)",
+                color: "#10b981",
+                border: "1px solid rgba(16, 185, 129, 0.3)",
+                height: 32,
+              }}
             />
-          </Box>
-        </Box>
-        {/* Dashboard Loading / Error */}
-        {loading && (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
-            <CircularProgress />
-          </Box>
-        )}
 
+            <Tooltip title="Refresh">
+              <IconButton
+                onClick={() => loadData(true)}
+                disabled={loading || refreshing}
+                sx={{
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  borderRadius: "8px",
+                  p: 0.9,
+                }}
+              >
+                <RefreshIcon
+                  fontSize="small"
+                  sx={{
+                    animation: refreshing ? "spin 1s linear infinite" : "none",
+                    "@keyframes spin": {
+                      "0%": { transform: "rotate(0deg)" },
+                      "100%": { transform: "rotate(360deg)" },
+                    },
+                  }}
+                />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </GlassCard>
+
+        {/* Global Error Banner */}
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
+          <Alert
+            severity="error"
+            action={
+              <Button color="inherit" size="small" onClick={() => loadData()}>
+                Retry
+              </Button>
+            }
+          >
             {error}
           </Alert>
         )}
 
-        {/* Statistics Cards */}
-        {!loading && !error && (
-          <Grid container spacing={2.5} sx={{ mb: 5 }}>
-            {cards.map((card) => {
-              const Icon = card.icon;
-              return (
-                <Grid
-                  key={card.title}
-                  size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}
-                >
-                  <Card
-                    sx={{
-                      height: "100%",
-                      minHeight: 140,
-                      borderRadius: 3,
-                      border: "1px solid #e8edf4",
-                      boxShadow: "0 4px 18px rgba(15,23,42,0.04)",
-                      transition: "transform .2s, box-shadow .2s",
-                      "&:hover": {
-                        transform: "translateY(-4px)",
-                        boxShadow: "0 10px 24px rgba(15,23,42,0.09)",
-                      },
-                    }}
-                  >
-                    <CardContent sx={{ p: 2.5 }}>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          gap: 1,
-                        }}
-                      >
-                        <Box>
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            fontWeight={600}
-                          >
-                            {card.title}
-                          </Typography>
-                          <Typography
-                            variant="h4"
-                            fontWeight={800}
-                            sx={{ mt: 1.5, color: isDark ? "text.primary" : "#172554" }}
-                          >
-                            {card.value}
-                          </Typography>
-                        </Box>
-                        <Avatar
-                          variant="rounded"
-                          sx={{
-                            width: 50,
-                            height: 50,
-                            bgcolor: card.background,
-                            color: card.color,
-                            borderRadius: 2.5,
-                          }}
-                        >
-                          <Icon sx={{ fontSize: 28 }} />
-                        </Avatar>
-                      </Box>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              );
-            })}
+        {/* Statistics Row */}
+        <Grid container spacing={2.5}>
+          <Grid item xs={12} sm={6} md={2.4}>
+            <Box onClick={() => navigate("/student/courses")} sx={{ cursor: "pointer", height: "100%" }}>
+              <StatCard
+                title="Enrolled Courses"
+                value={dashboardData?.courses ?? myCourses.length}
+                icon={MenuBookIcon}
+                color="#6366f1"
+                loading={loading}
+              />
+            </Box>
           </Grid>
-        )}
 
-        {/* Unique Enrolled Courses Section with Real Progress Lines */}
-        <Box sx={{ mt: 4 }}>
+          <Grid item xs={12} sm={6} md={2.4}>
+            <Box onClick={() => navigate("/student/assignments")} sx={{ cursor: "pointer", height: "100%" }}>
+              <StatCard
+                title="Assignments"
+                value={dashboardData?.assignments ?? 0}
+                icon={AssignmentIcon}
+                color="#818cf8"
+                loading={loading}
+              />
+            </Box>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={2.4}>
+            <Box onClick={() => navigate("/student/submissions")} sx={{ cursor: "pointer", height: "100%" }}>
+              <StatCard
+                title="Submitted"
+                value={dashboardData?.submitted ?? 0}
+                icon={UploadFileIcon}
+                color="#06b6d4"
+                loading={loading}
+              />
+            </Box>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={2.4}>
+            <Box onClick={() => navigate("/student/assignments")} sx={{ cursor: "pointer", height: "100%" }}>
+              <StatCard
+                title="Pending Tasks"
+                value={dashboardData?.pending ?? 0}
+                icon={PendingActionsIcon}
+                color="#f59e0b"
+                loading={loading}
+              />
+            </Box>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={2.4}>
+            <Box onClick={() => navigate("/student/submissions")} sx={{ cursor: "pointer", height: "100%" }}>
+              <StatCard
+                title="Reviewed"
+                value={dashboardData?.reviewed ?? 0}
+                icon={CheckCircleIcon}
+                color="#10b981"
+                loading={loading}
+              />
+            </Box>
+          </Grid>
+        </Grid>
+
+        {/* Enrolled Courses Section */}
+        <Box sx={{ mt: 1 }}>
           <Box
             sx={{
               display: "flex",
@@ -324,68 +292,62 @@ function Dashboard() {
               alignItems: { xs: "flex-start", sm: "center" },
               flexDirection: { xs: "column", sm: "row" },
               gap: 2,
-              mb: 3,
+              mb: 2.5,
             }}
           >
             <Box>
-              <Typography variant="h5" fontWeight={800}>
+              <Typography variant="h5" sx={{ fontWeight: 800 }}>
                 Enrolled Courses & Progress
               </Typography>
-              <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-                Track individual completion levels across your active tracks.
+              <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.25 }}>
+                Track individual completion milestones across your registered tracks.
               </Typography>
             </Box>
 
             <Button
               variant="outlined"
+              size="small"
               endIcon={<ArrowForwardIcon />}
               onClick={() => navigate("/student/courses")}
-              sx={{ borderRadius: 2, fontWeight: 700 }}
             >
-              Explore Catalog
+              Browse Catalog
             </Button>
           </Box>
 
-          {coursesLoading && (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
-              <CircularProgress />
-            </Box>
+          {coursesError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {coursesError}
+            </Alert>
           )}
 
-          {!coursesLoading && coursesError && (
-            <Alert severity="error">{coursesError}</Alert>
-          )}
-
-          {!coursesLoading && !coursesError && validCourses.length === 0 && (
-            <Card
+          {!coursesLoading && validCourses.length === 0 && (
+            <GlassCard
               sx={{
-                borderRadius: 3,
-                border: "1px dashed #cbd5e1",
-                boxShadow: "none",
                 textAlign: "center",
                 py: 6,
-                px: 2,
+                px: 3,
+                border: "1px dashed rgba(255, 255, 255, 0.15)",
               }}
             >
-              <AutoStoriesIcon sx={{ fontSize: 55, color: "#94a3b8", mb: 1 }} />
-              <Typography variant="h6" fontWeight={700}>
-                No enrolled courses yet
+              <AutoStoriesIcon sx={{ fontSize: 50, color: "text.secondary", mb: 1.5 }} />
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                No active enrollments found
               </Typography>
-              <Typography color="text.secondary" sx={{ mt: 1, mb: 3 }}>
-                Enroll in a course to start generating progress tracking data.
+              <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5, mb: 3 }}>
+                Enroll in academy courses to unlock interactive lessons, quizzes, and tracking.
               </Typography>
               <Button
                 variant="contained"
                 onClick={() => navigate("/student/courses")}
-                sx={{ borderRadius: 2, px: 3 }}
+                startIcon={<ArrowForwardIcon />}
               >
-                Browse Courses
+                Explore Courses
               </Button>
-            </Card>
+            </GlassCard>
           )}
 
-          {!coursesLoading && !coursesError && validCourses.length > 0 && (
-            <Grid container spacing={3}>
+          {validCourses.length > 0 && (
+            <Grid container spacing={2.5}>
               {validCourses.map((enrollment) => {
                 const course = enrollment.course;
                 if (!course) return null;
@@ -393,26 +355,19 @@ function Dashboard() {
                 const courseProgress = calculateRealProgress(enrollment);
 
                 return (
-                  <Grid key={enrollment._id} size={{ xs: 12, sm: 6, lg: 4 }}>
-                    <Card
+                  <Grid item xs={12} sm={6} lg={4} key={enrollment._id}>
+                    <GlassCard
+                      hover
                       sx={{
                         height: "100%",
                         display: "flex",
                         flexDirection: "column",
-                        borderRadius: 3,
-                        border: "1px solid #e8edf4",
-                        boxShadow: "0 5px 20px rgba(15,23,42,0.05)",
-                        transition: "transform .2s, box-shadow .2s",
-                        "&:hover": {
-                          transform: "translateY(-4px)",
-                          boxShadow: "0 12px 28px rgba(15,23,42,0.10)",
-                        },
                       }}
                     >
                       {course.thumbnail ? (
                         <CardMedia
                           component="img"
-                          height="170"
+                          height="160"
                           image={course.thumbnail}
                           alt={course.title || "Course"}
                           sx={{ objectFit: "cover" }}
@@ -424,10 +379,11 @@ function Dashboard() {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            bgcolor: "#eff6ff",
+                            bgcolor: "rgba(99, 102, 241, 0.08)",
+                            color: "#6366f1",
                           }}
                         >
-                          <SchoolIcon sx={{ fontSize: 50, color: "#2563eb" }} />
+                          <SchoolIcon sx={{ fontSize: 48 }} />
                         </Box>
                       )}
 
@@ -450,8 +406,7 @@ function Dashboard() {
                         >
                           <Typography
                             variant="h6"
-                            fontWeight={800}
-                            sx={{ lineHeight: 1.3, overflowWrap: "anywhere" }}
+                            sx={{ fontWeight: 700, lineHeight: 1.3, fontSize: "1rem" }}
                           >
                             {course.title || "Untitled Course"}
                           </Typography>
@@ -465,26 +420,26 @@ function Dashboard() {
 
                         <Typography
                           variant="body2"
-                          color="text.secondary"
                           sx={{
-                            lineHeight: 1.6,
+                            color: "text.secondary",
                             mb: 2,
                             display: "-webkit-box",
                             WebkitLineClamp: 2,
                             WebkitBoxOrient: "vertical",
                             overflow: "hidden",
+                            lineHeight: 1.5,
                           }}
                         >
                           {course.description || "Continue tracking your syllabus progress."}
                         </Typography>
 
-                        {/* Real Dynamic Progress Line */}
+                        {/* Progress Bar */}
                         <Box sx={{ mb: 2.5, mt: "auto" }}>
                           <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.8 }}>
-                            <Typography variant="caption" fontWeight={700} color="text.secondary">
+                            <Typography variant="caption" sx={{ fontWeight: 600, color: "text.secondary" }}>
                               Completion Status
                             </Typography>
-                            <Typography variant="caption" fontWeight={700} color="primary.main">
+                            <Typography variant="caption" sx={{ fontWeight: 700, color: "#6366f1" }}>
                               {courseProgress}% Completed
                             </Typography>
                           </Box>
@@ -492,12 +447,12 @@ function Dashboard() {
                             variant="determinate"
                             value={courseProgress}
                             sx={{
-                              height: 8,
-                              borderRadius: 4,
-                              bgcolor: isDark ? "#263650" : "#f1f5f9",
+                              height: 6,
+                              borderRadius: 3,
+                              bgcolor: "rgba(255, 255, 255, 0.08)",
                               "& .MuiLinearProgress-bar": {
-                                borderRadius: 4,
-                                bgcolor: courseProgress === 100 ? "#15803d" : "#2563eb",
+                                borderRadius: 3,
+                                bgcolor: courseProgress === 100 ? "#10b981" : "#6366f1",
                               },
                             }}
                           />
@@ -508,18 +463,12 @@ function Dashboard() {
                           variant="contained"
                           startIcon={<PlayArrowIcon />}
                           onClick={() => navigate("/student/assignments")}
-                          sx={{
-                            py: 1,
-                            borderRadius: 2,
-                            fontWeight: 700,
-                            textTransform: "none",
-                            boxShadow: "none",
-                          }}
+                          size="small"
                         >
-                          View assignments
+                          View Assignments
                         </Button>
                       </CardContent>
-                    </Card>
+                    </GlassCard>
                   </Grid>
                 );
               })}
@@ -527,8 +476,8 @@ function Dashboard() {
           )}
         </Box>
       </Box>
-    </StudentLayout>
+    </Layout>
   );
 }
 
-export default Dashboard;
+export default StudentDashboard;

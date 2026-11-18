@@ -1,204 +1,212 @@
-import Layout from "../../components/layout/Layout";
-import { useEffect, useState } from "react";
-import api from "../../servises/api";
-import { useParams } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Box,
-  Paper,
   Typography,
   TextField,
   Button,
   FormControl,
-  FormLabel,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
+  InputLabel,
   Select,
   MenuItem,
-  InputLabel,
+  Grid,
+  Alert,
+  Stack,
+  Skeleton,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import SaveIcon from "@mui/icons-material/Save";
 
+import Layout from "../../components/layout/Layout";
+import GlassCard from "../../components/common/GlassCard";
+import api from "../../servises/api";
 
 function UpdateStudent() {
-    const { id } = useParams();
-    const navigate = useNavigate();
+  const { id } = useParams();
+  const navigate = useNavigate();
 
-    const [name, setName] = useState("");
-    const [email, setEmail] = useState("");
-    const [phone, setPhone] = useState("");
-    const [gender, setGender] = useState("");
-    const [studentClass, setStudentClass] = useState("");
-    useEffect(() => {
-  const fetchStudent = async () => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [gender, setGender] = useState("Male");
+  const [studentClass, setStudentClass] = useState("");
+
+  const [fetching, setFetching] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchStudent = async () => {
+      try {
+        setFetching(true);
+        const response = await api.get(`/admin/getSingleStudent/${id}`);
+        const student = response.data?.student;
+
+        setName(student?.name || "");
+        setEmail(student?.email || "");
+        setPhone(student?.phone || "");
+        setGender(student?.Gender || "Male");
+        setStudentClass(student?.Studentclass || "");
+      } catch (err) {
+        console.error("Error fetching student:", err);
+        setError(err.response?.data?.message || "Failed to load student record.");
+      } finally {
+        setFetching(false);
+      }
+    };
+
+    if (id) fetchStudent();
+  }, [id]);
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
     try {
-      const response = await api.get(`/admin/getSingleStudent/${id}`);
+      await api.put(`/admin/updateStudent/${id}`, {
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        Gender: gender,
+        Studentclass: studentClass.trim(),
+      });
 
-      const student = response.data.student;
-
-      setName(student.name);
-      setEmail(student.email);
-      setPhone(student.phone);
-      setGender(student.Gender);
-      setStudentClass(student.Studentclass);
-
-      console.log(student);
-    } catch (error) {
-      console.error(error);
+      navigate("/admin/students");
+    } catch (err) {
+      console.error("Error updating student:", err);
+      setError(err.response?.data?.message || "Failed to update student profile.");
+      setLoading(false);
     }
   };
 
-  fetchStudent();
-}, [id]);
-const handleUpdate = async (e) => {
-  e.preventDefault();
-
-  try {
-    await api.put(`/admin/updateStudent/${id}`, {
-      name,
-      email,
-      phone,
-      Gender: gender,
-      Studentclass: studentClass,
-    });
-
-    alert("Student updated successfully");
-
-    navigate("/admin/dashboard");
-  } catch (error) {
-    console.error(error);
-    alert("Update failed");
-  }
-};
-    return (
-  <Layout>
-    <Paper
-      elevation={3}
-      sx={{
-        maxWidth: 600,
-        mx: "auto",
-        mt: 4,
-        p: 4,
-        borderRadius: 3,
-      }}
-    >
-      <Typography
-        variant="h4"
-        fontWeight="bold"
-        textAlign="center"
-        mb={3}
-      >
-        Update Student
-      </Typography>
-
-      <Box
-        component="form"
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 2,
-        }}
-      >
-        {/* Name */}
-        <TextField
-          label="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          fullWidth
-        />
-
-        {/* Email */}
-        <TextField
-          label="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          fullWidth
-        />
-
-        {/* Phone */}
-        <TextField
-          label="Phone"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          fullWidth
-        />
-
-        {/* Gender */}
-        <FormControl>
-          <FormLabel>Gender</FormLabel>
-
-          <RadioGroup
-            row
-            value={gender}
-            onChange={(e) => setGender(e.target.value)}
+  return (
+    <Layout>
+      <Box sx={{ width: "100%", maxWidth: 850, mx: "auto", display: "flex", flexDirection: "column", gap: 3.5 }}>
+        {/* Header */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate("/admin/students")}
           >
-            <FormControlLabel
-              value="Male"
-              control={<Radio />}
-              label="Male"
-            />
+            Back
+          </Button>
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 800 }}>
+              Edit Student Record
+            </Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
+              Update contact information, active class level, and academic record.
+            </Typography>
+          </Box>
+        </Box>
 
-            <FormControlLabel
-              value="Female"
-              control={<Radio />}
-              label="Female"
-            />
+        {error && (
+          <Alert severity="error" onClose={() => setError("")}>
+            {error}
+          </Alert>
+        )}
 
-            <FormControlLabel
-              value="Other"
-              control={<Radio />}
-              label="Other"
-            />
-          </RadioGroup>
-        </FormControl>
+        <GlassCard component="form" onSubmit={handleUpdate} sx={{ p: 4 }}>
+          {fetching ? (
+            <Stack spacing={2.5}>
+              <Skeleton height={50} />
+              <Skeleton height={50} />
+              <Skeleton height={50} />
+              <Skeleton height={50} width={200} />
+            </Stack>
+          ) : (
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Student Full Name"
+                  required
+                  fullWidth
+                  size="small"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </Grid>
 
-        {/* Class */}
-        <FormControl fullWidth>
-          <InputLabel>Class</InputLabel>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Email Address"
+                  type="email"
+                  required
+                  fullWidth
+                  size="small"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </Grid>
 
-          <Select
-            value={studentClass}
-            label="Class"
-            onChange={(e) => setStudentClass(e.target.value)}
-          >
-            {[
-              "Nursery",
-              "KG",
-              "1st",
-              "2nd",
-              "3rd",
-              "4th",
-              "5th",
-              "6th",
-              "7th",
-              "8th",
-              "9th",
-              "10th",
-              "11th",
-              "12th",
-            ].map((cls) => (
-              <MenuItem key={cls} value={cls}>
-                {cls}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="WhatsApp Phone"
+                  required
+                  fullWidth
+                  size="small"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </Grid>
 
-        {/* Update Button */}
-        <Button
-          variant="contained"
-          size="large"
-          sx={{ mt: 2 }}
-          onClick={handleUpdate}
-        >
-          Update Student
-        </Button>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth size="small" required>
+                  <InputLabel id="gender-label">Gender</InputLabel>
+                  <Select
+                    labelId="gender-label"
+                    label="Gender"
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                  >
+                    <MenuItem value="Male">Male</MenuItem>
+                    <MenuItem value="Female">Female</MenuItem>
+                    <MenuItem value="Other">Other</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  label="Assigned Class / Grade / Batch"
+                  placeholder="e.g. Batch 2026 - CS-A"
+                  required
+                  fullWidth
+                  size="small"
+                  value={studentClass}
+                  onChange={(e) => setStudentClass(e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <Stack direction="row" spacing={2} sx={{ pt: 1 }}>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    startIcon={<SaveIcon />}
+                    disabled={loading}
+                    sx={{ px: 3.5, py: 1 }}
+                  >
+                    {loading ? "Saving Changes..." : "Save Student"}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={() => navigate("/admin/students")}
+                    disabled={loading}
+                  >
+                    Cancel
+                  </Button>
+                </Stack>
+              </Grid>
+            </Grid>
+          )}
+        </GlassCard>
       </Box>
-    </Paper>
-  </Layout>
-);
-
+    </Layout>
+  );
 }
-
 
 export default UpdateStudent;
